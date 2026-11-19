@@ -2,14 +2,20 @@
 import PouchDB from 'pouchdb';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
   DB_TARGET_VERSIONS,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+  parseNotebookSchemaSemver,
   type MigrationsDBDocument,
   type MigrationsDBFields,
+  type NotebookUiSchemaMarkerDoc,
 } from '@faims3/data-model';
 import {
   ADMIN_ACTOR_PREFIX,
   classifyLock,
+  classifyNotebookMarker,
   collectStatus,
   deleteLock,
   describeDbVersion,
@@ -24,6 +30,7 @@ import {
   loadMigrationsDb,
   matchMigrationDocs,
   parseArgs,
+  resetNotebookMarker,
   resolveMigrationDoc,
   runCommand,
   setDbHealth,
@@ -74,6 +81,26 @@ async function seedMigrationDoc(
     ? await db.put({...fields, _id: fields._id})
     : await db.post(fields);
   return db.get<MigrationsDBDocument>(response.id);
+}
+
+function newerMajor(): string {
+  const parsed = parseNotebookSchemaSemver(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION)!;
+  return `${parsed.major + 1}.0.0`;
+}
+
+async function seedMarker(
+  db: PouchDB.Database,
+  schemaVersion: string
+): Promise<void> {
+  await db.put({
+    _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+    kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+    schemaVersion,
+    updatedAtMs: 5,
+    fingerprint: 'aabbccddeeff',
+    apiVersion: '1.11.0',
+    writerId: 'api-a',
+  });
 }
 
 function peopleDoc(version = 5): MigrationsDBFields {
@@ -170,6 +197,22 @@ describe('debug-migration-lock parseArgs', () => {
       json: true,
       strict: false,
     });
+  });
+
+  it('parses reset-notebook-marker with and without a version', () => {
+    expect(parseArgs(['reset-notebook-marker', '--yes'])).toEqual({
+      name: 'reset-notebook-marker',
+      version: undefined,
+      yes: true,
+    });
+    expect(parseArgs(['reset-notebook-marker', '1.0.0'])).toEqual({
+      name: 'reset-notebook-marker',
+      version: '1.0.0',
+      yes: false,
+    });
+    expect(() => parseArgs(['reset-notebook-marker', '1.0'])).toThrow(
+      /MAJOR\.MINOR\.PATCH/
+    );
   });
 
   it('rejects unknown commands and bad values', () => {
@@ -282,6 +325,28 @@ describe('debug-migration-lock formatters and classifiers', () => {
     expect(human).toContain('apiVersion');
     expect(human).toMatch(/API version:\s+1\.11\.0/);
     expect(human).toContain('1.11.0');
+  });
+
+  it('classifies the notebook marker against this build', () => {
+    const marker = (schemaVersion: string): NotebookUiSchemaMarkerDoc => ({
+      _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+      kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+      schemaVersion,
+      updatedAtMs: 1,
+    });
+    expect(classifyNotebookMarker(null, '1.0.1').relation).toBe('missing');
+    expect(classifyNotebookMarker(marker('1.0.1'), '1.0.1').relation).toBe(
+      'current'
+    );
+    expect(classifyNotebookMarker(marker('1.0.0'), '1.0.1').relation).toBe(
+      'behind'
+    );
+    const ahead = classifyNotebookMarker(marker('2.0.0'), '1.0.1');
+    expect(ahead.relation).toBe('ahead');
+    expect(ahead.interpretation).toMatch(/reset-notebook-marker/);
+    expect(classifyNotebookMarker(marker('7.0'), '1.0.1').relation).toBe(
+      'invalid'
+    );
   });
 
   it('describes current, behind, ahead, and unknown versions', () => {
@@ -443,7 +508,7 @@ describe('debug-migration-lock mutations', () => {
     );
   });
 
-  it('lists migration docs and skips design + lock documents', async () => {
+  it('lists migration docs and skips design, lock, and marker documents', async () => {
     const db = freshDb();
     await db.put({_id: '_design/index', views: {}});
     await seedLock(db, {
@@ -451,11 +516,15 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'api-a',
       startedAtMs: 1,
     });
+    await seedMarker(db, CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
     await seedMigrationDoc(db, peopleDoc());
     await db.put({_id: 'junk', hello: 'world'});
 
     const loaded = await loadMigrationsDb(asDebuggerDb(db));
     expect(loaded.lock?.status).toBe('complete');
+    expect(loaded.notebookMarker?.schemaVersion).toBe(
+      CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+    );
     expect(loaded.databases).toHaveLength(1);
     expect(loaded.databases[0]?.dbName).toBe('people');
     expect(loaded.unrecognised).toEqual([
@@ -788,6 +857,140 @@ describe('debug-migration-lock mutations', () => {
       logSpy.mockRestore();
       errSpy.mockRestore();
     }
+  });
+
+  it('status shows the notebook marker in human and JSON output', async () => {
+    const db = freshDb();
+    await seedMarker(db, newerMajor());
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const run = (json: boolean, strict = false) =>
+      runCommand(
+        {name: 'status', json, strict},
+        {db: asDebuggerDb(db), nowMs: 10, timeoutMs: 1_000}
+      );
+    try {
+      await run(false);
+      const human = stdout.join('\n');
+      expect(human).toContain('=== Notebook UI-schema marker ===');
+      expect(human).toMatch(new RegExp(`Recorded:\\s+${newerMajor()}`));
+      expect(human).toMatch(/State:\s+ahead/);
+      expect(human).toMatch(/Writer:\s+api-a/);
+
+      stdout.length = 0;
+      await run(true);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.notebookMarker).toMatchObject({
+        present: true,
+        relation: 'ahead',
+        target: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+        doc: {schemaVersion: newerMajor(), apiVersion: '1.11.0'},
+      });
+      expect(parsed.unrecognised).toEqual([]);
+
+      stdout.length = 0;
+      expect((await run(true, true)).exitCode).toBe(1);
+    } finally {
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it('resets the notebook marker by delete or explicit version', async () => {
+    const db = freshDb();
+    await seedMarker(db, '9.0.0');
+
+    const set = await resetNotebookMarker({
+      db: asDebuggerDb(db),
+      nowMs: 77,
+      instanceId: 'admin',
+      schemaVersion: '1.0.0',
+    });
+    expect(set.changed).toBe(true);
+    expect(set.before?.schemaVersion).toBe('9.0.0');
+    const stored = await db.get<NotebookUiSchemaMarkerDoc>(
+      NOTEBOOK_UI_SCHEMA_MARKER_ID
+    );
+    expect(stored).toMatchObject({
+      kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+      schemaVersion: '1.0.0',
+      updatedAtMs: 77,
+      writerId: 'admin',
+    });
+    expect(stored.fingerprint).toBeUndefined();
+
+    const removed = await resetNotebookMarker({
+      db: asDebuggerDb(db),
+      nowMs: 78,
+      instanceId: 'admin',
+    });
+    expect(removed).toMatchObject({changed: true, after: null});
+    await expect(db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID)).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(
+      (
+        await resetNotebookMarker({
+          db: asDebuggerDb(db),
+          nowMs: 79,
+          instanceId: 'admin',
+        })
+      ).changed
+    ).toBe(false);
+
+    await expect(
+      resetNotebookMarker({
+        db: asDebuggerDb(db),
+        nowMs: 80,
+        instanceId: 'admin',
+        schemaVersion: 'nope',
+      })
+    ).rejects.toThrow(/MAJOR\.MINOR\.PATCH/);
+  });
+
+  it('reset-notebook-marker via runCommand requires confirm', async () => {
+    const db = freshDb();
+    await seedMarker(db, '9.0.0');
+    const prompts: string[] = [];
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await runCommand(
+        {name: 'reset-notebook-marker', yes: false},
+        {
+          db: asDebuggerDb(db),
+          nowMs: 1,
+          instanceId: 'admin',
+          confirm: async message => {
+            prompts.push(message);
+          },
+        }
+      );
+      await expect(
+        runCommand(
+          {name: 'reset-notebook-marker', version: '1.0.0', yes: false},
+          {
+            db: asDebuggerDb(db),
+            nowMs: 2,
+            instanceId: 'admin',
+            confirm: async () => {
+              throw new Error('Aborted.');
+            },
+          }
+        )
+      ).rejects.toThrow(/Aborted/);
+    } finally {
+      errSpy.mockRestore();
+    }
+    expect(prompts[0]).toMatch(/Delete the notebook UI-schema marker/);
+    expect(prompts[0]).toContain('currently 9.0.0');
+    await expect(db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID)).rejects.toMatchObject({
+      status: 404,
+    });
   });
 
   it('runs status --strict through the command dispatcher', async () => {

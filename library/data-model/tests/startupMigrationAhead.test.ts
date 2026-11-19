@@ -5,45 +5,35 @@ import {
   DatabaseType,
   findStartupMigrationAheadReasons,
   formatStartupMigrationAheadSample,
+  isNotebookUiSchemaMarker,
   isStartupMigrationClusterAhead,
+  mergeNotebookUiSchemaMarkerVersion,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  NOTEBOOK_UI_SCHEMA_MARKER_KIND,
 } from '../src';
 
 describe('startupMigrationAhead', () => {
-  it('is not ahead when live versions match this process targets', () => {
-    const databases = [
-      {
-        dbType: DatabaseType.AUTH,
-        dbName: 'auth',
-        version: DB_TARGET_VERSIONS[DatabaseType.AUTH].targetVersion,
-      },
-    ];
-    const notebooks = [
-      {
-        kind: 'project' as const,
-        id: 'survey-1',
-        schemaVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-      },
-    ];
+  const authTarget = DB_TARGET_VERSIONS[DatabaseType.AUTH].targetVersion;
+  const currentAuth = [
+    {dbType: DatabaseType.AUTH, dbName: 'auth', version: authTarget},
+  ];
 
-    expect(findStartupMigrationAheadReasons({databases, notebooks})).toEqual(
-      []
-    );
-    expect(isStartupMigrationClusterAhead({databases, notebooks})).toBe(false);
+  it('is not ahead when live versions match this process targets', () => {
+    const input = {
+      databases: currentAuth,
+      notebookMarker: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+    };
+
+    expect(findStartupMigrationAheadReasons(input)).toEqual([]);
+    expect(isStartupMigrationClusterAhead(input)).toBe(false);
     expect(
-      formatStartupMigrationAheadSample(
-        findStartupMigrationAheadReasons({databases, notebooks})
-      )
+      formatStartupMigrationAheadSample(findStartupMigrationAheadReasons(input))
     ).toBeUndefined();
   });
 
   it('is ahead when a Couch DB version is past this process target', () => {
-    const targetVersion = DB_TARGET_VERSIONS[DatabaseType.AUTH].targetVersion;
     const databases = [
-      {
-        dbType: DatabaseType.AUTH,
-        dbName: 'auth',
-        version: targetVersion + 1,
-      },
+      {dbType: DatabaseType.AUTH, dbName: 'auth', version: authTarget + 1},
     ];
 
     const reasons = findStartupMigrationAheadReasons({databases});
@@ -52,59 +42,116 @@ describe('startupMigrationAhead', () => {
         kind: 'db',
         dbType: DatabaseType.AUTH,
         dbName: 'auth',
-        liveVersion: targetVersion + 1,
-        targetVersion,
+        liveVersion: authTarget + 1,
+        targetVersion: authTarget,
       },
     ]);
     expect(isStartupMigrationClusterAhead({databases})).toBe(true);
     expect(formatStartupMigrationAheadSample(reasons)).toBe(
-      `auth:${targetVersion + 1}>${targetVersion}`
+      `auth:${authTarget + 1}>${authTarget}`
     );
   });
 
-  it('is ahead when a notebook schemaVersion is past this process target', () => {
-    const notebooks = [
-      {
-        kind: 'template' as const,
-        id: 'tmpl-1',
-        schemaVersion: '9.0.0',
-      },
-    ];
-
+  it('is ahead when the notebook marker is newer than this process target', () => {
     const reasons = findStartupMigrationAheadReasons({
-      databases: [],
-      notebooks,
+      databases: currentAuth,
+      notebookMarker: '9.0.0',
+      notebookTarget: '1.0.1',
     });
     expect(reasons).toEqual([
-      {
-        kind: 'notebook',
-        notebookKind: 'template',
-        id: 'tmpl-1',
-        liveVersion: '9.0.0',
-        targetVersion: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
-      },
+      {kind: 'notebook', liveVersion: '9.0.0', targetVersion: '1.0.1'},
     ]);
-    expect(isStartupMigrationClusterAhead({databases: [], notebooks})).toBe(
-      true
+    expect(formatStartupMigrationAheadSample(reasons)).toBe(
+      'notebook-ui-schema:9.0.0>1.0.1'
     );
   });
 
-  it('ignores unknown db types, behind versions, and legacy notebook versions', () => {
+  it.each([
+    ['equal', '1.0.1'],
+    ['older', '1.0.0'],
+    ['missing', undefined],
+    ['non-semver', '7.0'],
+    ['garbage', 'not-a-version'],
+  ])('is not ahead when the notebook marker is %s', (_label, marker) => {
+    expect(
+      findStartupMigrationAheadReasons({
+        databases: currentAuth,
+        notebookMarker: marker,
+        notebookTarget: '1.0.1',
+      })
+    ).toEqual([]);
+  });
+
+  it('reports DB reasons independently of the notebook marker', () => {
+    const databases = [
+      {dbType: DatabaseType.AUTH, dbName: 'auth', version: authTarget + 2},
+    ];
+    const dbReason = {
+      kind: 'db',
+      dbType: DatabaseType.AUTH,
+      dbName: 'auth',
+      liveVersion: authTarget + 2,
+      targetVersion: authTarget,
+    };
+
+    expect(
+      findStartupMigrationAheadReasons({
+        databases,
+        notebookMarker: '1.0.0',
+        notebookTarget: '1.0.1',
+      })
+    ).toEqual([dbReason]);
+
+    const both = findStartupMigrationAheadReasons({
+      databases,
+      notebookMarker: '2.0.0',
+      notebookTarget: '1.0.1',
+    });
+    expect(both).toEqual([
+      dbReason,
+      {kind: 'notebook', liveVersion: '2.0.0', targetVersion: '1.0.1'},
+    ]);
+    expect(formatStartupMigrationAheadSample(both)).toBe(
+      `auth:${authTarget + 2}>${authTarget},notebook-ui-schema:2.0.0>1.0.1`
+    );
+  });
+
+  it('ignores unknown db types and behind versions', () => {
     expect(
       findStartupMigrationAheadReasons({
         databases: [
           {dbType: 'NOT_A_TYPE', dbName: 'mystery', version: 99},
-          {
-            dbType: DatabaseType.AUTH,
-            dbName: 'auth',
-            version: DB_TARGET_VERSIONS[DatabaseType.AUTH].targetVersion - 1,
-          },
-        ],
-        notebooks: [
-          {kind: 'project', id: 'legacy', schemaVersion: '7.0'},
-          {kind: 'project', id: 'missing', schemaVersion: undefined},
+          {dbType: DatabaseType.AUTH, dbName: 'auth', version: authTarget - 1},
         ],
       })
     ).toEqual([]);
+  });
+});
+
+describe('notebook UI-schema marker helpers', () => {
+  it('recognises the marker by id and kind', () => {
+    expect(
+      isNotebookUiSchemaMarker({
+        _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+        kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+        schemaVersion: '1.0.0',
+        updatedAtMs: 1,
+      })
+    ).toBe(true);
+    expect(
+      isNotebookUiSchemaMarker({_id: NOTEBOOK_UI_SCHEMA_MARKER_ID, kind: 'x'})
+    ).toBe(false);
+    expect(isNotebookUiSchemaMarker(null)).toBe(false);
+  });
+
+  it('never lowers the recorded version and replaces invalid values', () => {
+    expect(mergeNotebookUiSchemaMarkerVersion(undefined, '1.0.1')).toBe(
+      '1.0.1'
+    );
+    expect(mergeNotebookUiSchemaMarkerVersion('1.0.0', '1.0.1')).toBe('1.0.1');
+    expect(mergeNotebookUiSchemaMarkerVersion('1.0.1', '1.0.1')).toBe('1.0.1');
+    expect(mergeNotebookUiSchemaMarkerVersion('2.0.0', '1.0.1')).toBe('2.0.0');
+    expect(mergeNotebookUiSchemaMarkerVersion('7.0', '1.0.1')).toBe('1.0.1');
+    expect(mergeNotebookUiSchemaMarkerVersion(42, '1.0.1')).toBe('1.0.1');
   });
 });

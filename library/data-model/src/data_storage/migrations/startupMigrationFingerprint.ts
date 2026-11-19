@@ -118,7 +118,7 @@ export function buildStartupMigrationFingerprintInput(): StartupMigrationFingerp
 }
 
 /**
- * SHA-256 of {@link input}, truncated to
+ * SHA-256 of `input`, truncated to
  * {@link STARTUP_MIGRATION_FINGERPRINT_LENGTH} lowercase hex characters.
  */
 export async function hashStartupMigrationFingerprintInput(

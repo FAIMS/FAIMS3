@@ -1,25 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Read live Couch migration docs and notebook listing versions to decide
- * whether this process's boot-migrate targets are already behind the cluster.
+ * Read the migrations DB to decide whether this process's boot-migrate
+ * targets are already behind the cluster.
  *
  * Passed as {@link withStartupMigrationLock}'s `isClusterAhead` so an older
  * replica that sees a foreign settlement does not become doer.
+ *
+ * Only state written by boot migrate is consulted: per-DB version documents
+ * and the notebook UI-schema marker ({@link NOTEBOOK_UI_SCHEMA_MARKER_ID},
+ * written by a doer after its notebook walk). Project / template
+ * `uiSpecProperties.schemaVersion` is never read here: it is copied from
+ * the uploaded uiSpec and can carry any version, so a single imported or
+ * future-stamped notebook would otherwise make every upgraded replica skip
+ * boot migrate on every boot.
  */
 import {
   findStartupMigrationAheadReasons,
   formatStartupMigrationAheadSample,
+  isNotebookUiSchemaMarker,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
   type StartupMigrationAheadReason,
   type StartupMigrationLiveDbVersion,
-  type StartupMigrationLiveNotebookVersion,
 } from '@faims3/data-model';
 import {getMigrationDb} from '.';
-import {getAllProjectsListing} from './notebooks';
 import {
   logStartupMigration,
   STARTUP_MIGRATION_LOCK_ID,
 } from './startupMigrationLock';
-import {getTemplates} from './templates';
 
 function isLiveDbVersion(doc: unknown): doc is StartupMigrationLiveDbVersion {
   if (typeof doc !== 'object' || doc === null) {
@@ -33,10 +40,23 @@ function isLiveDbVersion(doc: unknown): doc is StartupMigrationLiveDbVersion {
   );
 }
 
-async function loadLiveDbVersions(): Promise<StartupMigrationLiveDbVersion[]> {
+async function loadRecordedState(): Promise<{
+  databases: StartupMigrationLiveDbVersion[];
+  notebookMarker?: string;
+}> {
   const result = await getMigrationDb().allDocs({include_docs: true});
   const databases: StartupMigrationLiveDbVersion[] = [];
+  let notebookMarker: string | undefined;
   for (const row of result.rows) {
+    if (row.id === NOTEBOOK_UI_SCHEMA_MARKER_ID) {
+      if (
+        isNotebookUiSchemaMarker(row.doc) &&
+        typeof row.doc.schemaVersion === 'string'
+      ) {
+        notebookMarker = row.doc.schemaVersion;
+      }
+      continue;
+    }
     if (row.id.startsWith('_design/') || row.id === STARTUP_MIGRATION_LOCK_ID) {
       continue;
     }
@@ -48,45 +68,20 @@ async function loadLiveDbVersions(): Promise<StartupMigrationLiveDbVersion[]> {
       });
     }
   }
-  return databases;
-}
-
-async function loadLiveNotebookVersions(): Promise<
-  StartupMigrationLiveNotebookVersion[]
-> {
-  const [projects, templates] = await Promise.all([
-    getAllProjectsListing(),
-    getTemplates({}),
-  ]);
-  return [
-    ...projects.map(project => ({
-      kind: 'project' as const,
-      id: project._id,
-      schemaVersion: project.uiSpecProperties?.schemaVersion,
-    })),
-    ...templates.map(template => ({
-      kind: 'template' as const,
-      id: template._id,
-      schemaVersion: template.uiSpecProperties?.schemaVersion,
-    })),
-  ];
+  return {databases, notebookMarker};
 }
 
 /** Live ahead reasons for this process's boot-migrate targets. */
 export async function readStartupMigrationAheadReasons(): Promise<
   StartupMigrationAheadReason[]
 > {
-  const [databases, notebooks] = await Promise.all([
-    loadLiveDbVersions(),
-    loadLiveNotebookVersions(),
-  ]);
-  return findStartupMigrationAheadReasons({databases, notebooks});
+  return findStartupMigrationAheadReasons(await loadRecordedState());
 }
 
 /**
- * True when any live DB or notebook version is already past this process.
- * Logs a sample of reasons when ahead. Used as the lock `isClusterAhead`
- * callback.
+ * True when any recorded DB version or the notebook UI-schema marker is
+ * already past this process. Logs a sample of reasons when ahead. Used as
+ * the lock `isClusterAhead` callback.
  */
 export async function isStartupMigrationClusterAhead(): Promise<boolean> {
   const reasons = await readStartupMigrationAheadReasons();

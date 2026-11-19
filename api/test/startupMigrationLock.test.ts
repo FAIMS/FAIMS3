@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
-import {afterEach, describe, expect, it, vi} from 'vitest';
-import {STARTUP_MIGRATION_FINGERPRINT_LENGTH} from '@faims3/data-model';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+  CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  STARTUP_MIGRATION_FINGERPRINT_LENGTH,
+} from '@faims3/data-model';
+import {getMigrationDb} from '../src/couchdb';
+import {
+  writeNotebookSchemaMarker,
+  type NotebookSchemaMarkerStore,
+} from '../src/couchdb/notebookSchemaMarker';
+import {isStartupMigrationClusterAhead} from '../src/couchdb/startupMigrationAhead';
 import {
   createStartupInstanceId,
   STARTUP_MIGRATION_LOCK_ID,
@@ -15,6 +25,11 @@ import {
   type StartupMigrationLockDoc,
   type StartupMigrationLockStore,
 } from '../src/couchdb/startupMigrationLock';
+import {
+  newerNotebookSchemaVersion,
+  resetAheadCheckDbs,
+  seedFutureStampedNotebooks,
+} from './futureNotebooks';
 
 function memoryDb(): PouchDB.Database {
   return new PouchDB(`startup-lock-${Math.random().toString(36).slice(2)}`, {
@@ -1061,5 +1076,79 @@ describe('startup migration lock', () => {
     } finally {
       logSpy.mockRestore();
     }
+  });
+});
+
+describe('startup migration lock with the live ahead check', () => {
+  const migrationsDb = () => getMigrationDb() as unknown as PouchDB.Database;
+
+  beforeEach(async () => {
+    await resetAheadCheckDbs();
+    await seedLock(migrationsDb(), {
+      status: 'complete',
+      holderId: 'previous-api',
+      startedAtMs: 1,
+      fingerprint: 'previous-fingerprint',
+      apiVersion: '1.10.0',
+    });
+  });
+
+  it('claims and runs after a foreign settlement despite future-stamped notebooks', async () => {
+    await seedFutureStampedNotebooks();
+    const run = vi.fn(async () => {
+      await writeNotebookSchemaMarker({
+        db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+      });
+    });
+
+    const result = await withStartupMigrationLock({
+      db: asStore(migrationsDb()),
+      instanceId: 'upgraded-api',
+      run,
+      fingerprint: 'upgraded-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+      isClusterAhead: isStartupMigrationClusterAhead,
+    });
+
+    expect(result).toEqual({role: 'doer', status: 'complete'});
+    expect(run).toHaveBeenCalledOnce();
+    const lock = await readLock(migrationsDb());
+    expect(lock.fingerprint).toBe('upgraded-fingerprint');
+    expect(lock.holderId).toBe('upgraded-api');
+    const marker = await migrationsDb().get<{schemaVersion: string}>(
+      NOTEBOOK_UI_SCHEMA_MARKER_ID
+    );
+    expect(marker.schemaVersion).toBe(CURRENT_NOTEBOOK_UI_SCHEMA_VERSION);
+  });
+
+  it('skips becoming doer after a foreign settlement when the marker is newer', async () => {
+    await writeNotebookSchemaMarker({
+      db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+      schemaVersion: newerNotebookSchemaVersion(),
+    });
+    const before = await readLock(migrationsDb());
+    const run = vi.fn();
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const result = await withStartupMigrationLock({
+        db: asStore(migrationsDb()),
+        instanceId: 'older-api',
+        run,
+        fingerprint: 'older-fingerprint',
+        apiVersion: '1.9.0',
+        pollIntervalMs: 10,
+        isClusterAhead: isStartupMigrationClusterAhead,
+      });
+
+      expect(result).toEqual({role: 'waiter', status: 'complete'});
+    } finally {
+      logSpy.mockRestore();
+    }
+    expect(run).not.toHaveBeenCalled();
+    const after = await readLock(migrationsDb());
+    expect(after._rev).toBe(before._rev);
+    expect(after.fingerprint).toBe('previous-fingerprint');
   });
 });

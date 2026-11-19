@@ -29,10 +29,12 @@
  * (age is `now - startedAtMs`, not `updatedAtMs`). A later process start that
  * finds a settled lock therefore re-claims and runs again — migrations are
  * idempotent. Waiters who already joined a live attempt do not re-run while
- * that attempt is still young; they proceed once it writes `complete`/`failed`.
+ * that attempt is still young; they proceed once it writes `complete`/`failed`
+ * with a matching fingerprint.
  * After a *foreign* settlement, {@link StartupMigrationLockOptions.isClusterAhead}
- * can skip becoming doer when live DB/notebook versions are already past this
- * process — the lock stays as the newer settlement.
+ * can skip becoming doer when recorded DB versions or the notebook UI-schema
+ * marker are already past this process — the lock stays as the newer
+ * settlement.
  *
  * Timeout is not "give up and attach". After
  * {@link StartupMigrationLockOptions.timeoutMs} a waiter returns to
@@ -203,10 +205,13 @@ export type StartupMigrationLockOptions = {
    */
   apiVersion?: string;
   /**
-   * After a foreign `complete`/`failed` lock, return true when live Couch
-   * or notebook versions are already past this process. The waiter then
-   * proceeds without claiming, so an older replica cannot `forceWrite`
-   * init or stamp `failed` over the newer settlement. Matching
+   * After a foreign `complete`/`failed` lock, return true when state the
+   * boot-migrate process itself writes (DB version docs, the notebook
+   * UI-schema marker) is already past this process. Never decide this from
+   * user content such as uploaded notebook `schemaVersion`s, or one imported
+   * notebook would make every upgraded replica skip migrate forever. The
+   * waiter then proceeds without claiming, so an older replica cannot
+   * `forceWrite` init or stamp `failed` over the newer settlement. Matching
    * fingerprints still re-claim (later startup waves). Omitted: always
    * re-claim a foreign settlement (unit-test default).
    */
@@ -250,13 +255,13 @@ export function startupMigrationIoBackoffMs(
   return Math.min(maxMs, baseMs * 2 ** exp);
 }
 
-/** Pouch/Couch 409 — another replica wrote the lock first. */
-function isConflict(error: unknown): boolean {
+/** Pouch/Couch 409 — another replica wrote the document first. */
+export function isConflict(error: unknown): boolean {
   return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
 }
 
-/** Pouch/Couch 404 — lock document has never been created. */
-function isNotFound(error: unknown): boolean {
+/** Pouch/Couch 404 — the document has never been created. */
+export function isNotFound(error: unknown): boolean {
   return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
 }
 
@@ -327,11 +332,6 @@ function isExpired(
   return nowMs - doc.startedAtMs >= timeoutMs;
 }
 
-/**
- * When stealing a still-`running` lock, append a `timed_out` history row and
- * drop entries beyond {@link MAX_LOCK_HISTORY}. Settled docs keep their
- * existing history (the previous attempt already archived itself).
- */
 function identityFields(source: {fingerprint?: string; apiVersion?: string}): {
   fingerprint?: string;
   apiVersion?: string;
@@ -344,6 +344,11 @@ function identityFields(source: {fingerprint?: string; apiVersion?: string}): {
   };
 }
 
+/**
+ * When stealing a still-`running` lock, append a `timed_out` history row and
+ * drop entries beyond {@link MAX_LOCK_HISTORY}. Settled docs keep their
+ * existing history (the previous attempt already archived itself).
+ */
 function archiveRunningAttempt(
   doc: StartupMigrationLockDoc,
   finishedAtMs: number

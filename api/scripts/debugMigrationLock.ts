@@ -14,6 +14,7 @@
  *   pnpm debug-migration-lock status --json
  *   pnpm debug-migration-lock unlock --yes
  *   pnpm debug-migration-lock set-version people 4 --yes --reason='re-run v4→v5'
+ *   pnpm debug-migration-lock reset-notebook-marker --yes
  *
  * Environment: same as other API scripts (`COUCHDB_INTERNAL_URL`,
  * `COUCHDB_USER` / `COUCHDB_PASSWORD`, lock timeout). Does not start
@@ -24,15 +25,21 @@ import {hostname} from 'node:os';
 import * as readline from 'node:readline';
 import {
   assessNotebookSchemaCompatibility,
+  compareNotebookSchemaSemver,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DATABASE_TYPES,
   DatabaseType,
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
+  isNotebookSchemaSemver,
+  isNotebookUiSchemaMarker,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  NOTEBOOK_UI_SCHEMA_MARKER_KIND,
   type DATABASE_TYPE,
   type MigrationLog,
   type MigrationsDBDocument,
   type MigrationsDBFields,
+  type NotebookUiSchemaMarkerDoc,
 } from '@faims3/data-model';
 import {config} from '../src/buildconfig';
 import {getMigrationDb, verifyCouchDBConnection} from '../src/couchdb';
@@ -95,6 +102,7 @@ const COMMANDS = [
   'unregister',
   'targets',
   'notebooks',
+  'reset-notebook-marker',
   'watch',
   'help',
 ] as const;
@@ -142,6 +150,7 @@ export type DebuggerCommand =
   | {name: 'unregister'; db: string; type?: DATABASE_TYPE; yes: boolean}
   | {name: 'targets'; json: boolean}
   | {name: 'notebooks'; json: boolean}
+  | {name: 'reset-notebook-marker'; version?: string; yes: boolean}
   | {name: 'watch'; intervalMs: number; timeoutMs: number};
 
 /** Persistence used by lock / version mutations. Production passes Couch. */
@@ -202,12 +211,28 @@ export type DbRow = {
 
 export type UnrecognisedDoc = {id: string; hint: string};
 
+export type NotebookMarkerRelation =
+  | 'missing'
+  | 'invalid'
+  | 'current'
+  | 'behind'
+  | 'ahead';
+
+export type NotebookMarkerView = {
+  present: boolean;
+  doc?: NotebookUiSchemaMarkerDoc;
+  target: string;
+  relation: NotebookMarkerRelation;
+  interpretation: string;
+};
+
 export type StatusSnapshot = {
   couchUrl: string;
   lockEnabled: boolean;
   timeoutMs: number;
   nowMs: number;
   lock: LockView;
+  notebookMarker: NotebookMarkerView;
   databases: DbRow[];
   missingExpected: Array<{dbType: string; dbName: string}>;
   unrecognised: UnrecognisedDoc[];
@@ -400,7 +425,7 @@ export function parseArgs(argv: string[]): DebuggerCommand {
   const rest = positionals.slice(1);
   if (!COMMANDS.includes(commandName as DebuggerCommandName)) {
     throw new Error(
-      `Unknown command '${commandName}'. Use status, lock, unlock, delete-lock, claim, dbs, show, set-version, set-health, unregister, targets, notebooks, or watch.`
+      `Unknown command '${commandName}'. Use status, lock, unlock, delete-lock, claim, dbs, show, set-version, set-health, unregister, targets, notebooks, reset-notebook-marker, or watch.`
     );
   }
   const command = commandName as DebuggerCommandName;
@@ -481,6 +506,15 @@ export function parseArgs(argv: string[]): DebuggerCommand {
       return {name: 'targets', json};
     case 'notebooks':
       return {name: 'notebooks', json};
+    case 'reset-notebook-marker': {
+      const version = rest[0];
+      if (version !== undefined && !isNotebookSchemaSemver(version)) {
+        throw new Error(
+          `reset-notebook-marker version must be MAJOR.MINOR.PATCH, got '${version}'.`
+        );
+      }
+      return {name: 'reset-notebook-marker', version, yes};
+    }
     case 'watch':
       return {
         name: 'watch',
@@ -516,6 +550,11 @@ Commands:
   unregister <db>        Delete the version document (next migrate rediscovers)
   targets                Expected versions and registered migration steps
   notebooks              Project/template uiSpec versions vs this build
+  reset-notebook-marker [x.y.z]
+                         Delete the notebook UI-schema marker, or set it to
+                         x.y.z. Use after a deliberate rollback: a marker
+                         newer than the running build makes it skip boot
+                         migrate after a foreign lock settlement.
   watch                  Poll the lock until it is missing or settled
 
 Common options:
@@ -525,7 +564,8 @@ Common options:
   --reason='…'           Audit note stored on unlock / set-version
   --force                unlock: rewrite an already-settled lock
                          claim: steal a still-live running lock
-  --strict               status: exit 1 if lock is running or any DB is not current
+  --strict               status: exit 1 if lock is running, any DB is not
+                         current, or the notebook marker is ahead
   --behind / --ahead / --unhealthy
                          Filter dbs listing
   --create               set-version: create a missing version document
@@ -539,6 +579,7 @@ Examples:
   pnpm debug-migration-lock unlock --status=failed --reason='crashed doer' --yes
   pnpm debug-migration-lock set-version people 4 --yes --reason='re-run people v4→v5'
   pnpm debug-migration-lock set-version teams 1 --create --type=TEAMS --yes
+  pnpm debug-migration-lock reset-notebook-marker 1.0.0 --yes
 `;
 }
 
@@ -664,6 +705,57 @@ export function classifyLock(
   };
 }
 
+export function classifyNotebookMarker(
+  doc: NotebookUiSchemaMarkerDoc | null,
+  target: string = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+): NotebookMarkerView {
+  if (!doc) {
+    return {
+      present: false,
+      target,
+      relation: 'missing',
+      interpretation:
+        'No marker. The next boot doer (any build) writes it after the notebook walk; until then notebook schema cannot make a replica skip migrate.',
+    };
+  }
+  const version = doc.schemaVersion;
+  if (!isNotebookSchemaSemver(version) || !isNotebookSchemaSemver(target)) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'invalid',
+      interpretation: `Marker version '${String(version)}' is not MAJOR.MINOR.PATCH. The ahead check ignores it and the next doer overwrites it.`,
+    };
+  }
+  const cmp = compareNotebookSchemaSemver(version, target);
+  if (cmp > 0) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'ahead',
+      interpretation: `Marker ${version} is newer than this build (${target}). After a foreign lock settlement this build skips boot migrate. After a deliberate rollback, run reset-notebook-marker.`,
+    };
+  }
+  if (cmp < 0) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'behind',
+      interpretation: `Marker ${version} is older than this build (${target}). The next doer on this build raises it.`,
+    };
+  }
+  return {
+    present: true,
+    doc,
+    target,
+    relation: 'current',
+    interpretation: 'A build targeting this version has run the notebook walk.',
+  };
+}
+
 function lastMigration(
   log: MigrationLog[] | undefined
 ): DbRow['lastMigration'] {
@@ -738,18 +830,45 @@ export async function readLock(
   }
 }
 
+export async function readNotebookMarker(
+  db: DebuggerDb
+): Promise<NotebookUiSchemaMarkerDoc | null> {
+  try {
+    const doc = await db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
+    return isNotebookUiSchemaMarker(doc) ? doc : null;
+  } catch (error) {
+    if (isNotFound(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function loadMigrationsDb(db: DebuggerDb): Promise<{
   lock: StartupMigrationLockDoc | null;
+  notebookMarker: NotebookUiSchemaMarkerDoc | null;
   databases: MigrationsDBDocument[];
   unrecognised: UnrecognisedDoc[];
 }> {
   const result = await db.allDocs({include_docs: true});
   let lock: StartupMigrationLockDoc | null = null;
+  let notebookMarker: NotebookUiSchemaMarkerDoc | null = null;
   const databases: MigrationsDBDocument[] = [];
   const unrecognised: UnrecognisedDoc[] = [];
 
   for (const row of result.rows) {
     if (row.id.startsWith('_design/')) {
+      continue;
+    }
+    if (row.id === NOTEBOOK_UI_SCHEMA_MARKER_ID) {
+      if (isNotebookUiSchemaMarker(row.doc)) {
+        notebookMarker = row.doc;
+      } else {
+        unrecognised.push({
+          id: row.id,
+          hint: 'notebook marker id present but document shape is invalid',
+        });
+      }
       continue;
     }
     if (row.id === STARTUP_MIGRATION_LOCK_ID) {
@@ -775,7 +894,7 @@ export async function loadMigrationsDb(db: DebuggerDb): Promise<{
     return typeCmp !== 0 ? typeCmp : a.dbName.localeCompare(b.dbName);
   });
 
-  return {lock, databases, unrecognised};
+  return {lock, notebookMarker, databases, unrecognised};
 }
 
 export function missingExpectedGlobals(
@@ -795,6 +914,7 @@ export function collectStatus(options: {
   timeoutMs: number;
   nowMs: number;
   lock: StartupMigrationLockDoc | null;
+  notebookMarker?: NotebookUiSchemaMarkerDoc | null;
   databases: MigrationsDBDocument[];
   unrecognised: UnrecognisedDoc[];
 }): StatusSnapshot {
@@ -804,6 +924,7 @@ export function collectStatus(options: {
     timeoutMs: options.timeoutMs,
     nowMs: options.nowMs,
     lock: classifyLock(options.lock, options.nowMs, options.timeoutMs),
+    notebookMarker: classifyNotebookMarker(options.notebookMarker ?? null),
     databases: options.databases.map(toDbRow),
     missingExpected: missingExpectedGlobals(options.databases),
     unrecognised: options.unrecognised,
@@ -952,6 +1073,67 @@ export async function deleteLock(options: {db: DebuggerDb}): Promise<{
   }
   await options.db.remove({_id: before._id, _rev: before._rev});
   return {removed: true, before};
+}
+
+/**
+ * Delete the notebook UI-schema marker (no `schemaVersion`) or overwrite it
+ * with `schemaVersion`, which may be lower than the recorded one. Records
+ * only — notebooks are not touched.
+ */
+export async function resetNotebookMarker(options: {
+  db: DebuggerDb;
+  nowMs: number;
+  instanceId: string;
+  schemaVersion?: string;
+}): Promise<{
+  changed: boolean;
+  before: NotebookUiSchemaMarkerDoc | null;
+  after: NotebookUiSchemaMarkerDoc | null;
+}> {
+  let raw: unknown;
+  try {
+    raw = await options.db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
+  } catch (error) {
+    if (!isNotFound(error)) {
+      throw error;
+    }
+  }
+  const rev =
+    isRecord(raw) && typeof raw._rev === 'string' ? raw._rev : undefined;
+  const before = isNotebookUiSchemaMarker(raw) ? raw : null;
+
+  if (options.schemaVersion === undefined) {
+    if (rev === undefined) {
+      return {changed: false, before, after: null};
+    }
+    await options.db.remove({_id: NOTEBOOK_UI_SCHEMA_MARKER_ID, _rev: rev});
+    return {changed: true, before, after: null};
+  }
+
+  if (!isNotebookSchemaSemver(options.schemaVersion)) {
+    throw new Error(
+      `Notebook marker version must be MAJOR.MINOR.PATCH, got '${options.schemaVersion}'.`
+    );
+  }
+  const after: NotebookUiSchemaMarkerDoc = {
+    _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+    ...(rev !== undefined ? {_rev: rev} : {}),
+    kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+    schemaVersion: options.schemaVersion,
+    updatedAtMs: options.nowMs,
+    writerId: options.instanceId,
+  };
+  try {
+    await options.db.put(after);
+  } catch (error) {
+    if (isConflict(error)) {
+      throw new Error(
+        'Conflict writing the notebook marker (another process updated it). Re-run status and retry.'
+      );
+    }
+    throw error;
+  }
+  return {changed: true, before, after};
 }
 
 export async function forceClaim(options: {
@@ -1176,7 +1358,8 @@ export function statusIsStrictFailure(snapshot: StatusSnapshot): boolean {
     summary.ahead > 0 ||
     summary.unknown > 0 ||
     summary.unhealthy > 0 ||
-    snapshot.missingExpected.length > 0
+    snapshot.missingExpected.length > 0 ||
+    snapshot.notebookMarker.relation === 'ahead'
   );
 }
 
@@ -1291,6 +1474,24 @@ export function formatLockHuman(lock: LockView, timeoutMs: number): string {
   return lines.join('\n');
 }
 
+export function formatNotebookMarkerHuman(marker: NotebookMarkerView): string {
+  const lines = [
+    `  Present:     ${marker.present ? 'yes' : 'no'}`,
+    `  Target:      ${marker.target}`,
+  ];
+  const doc = marker.doc;
+  if (doc) {
+    lines.push(`  Recorded:    ${String(doc.schemaVersion)}`);
+    lines.push(`  State:       ${marker.relation}`);
+    lines.push(`  Updated:     ${formatTimestamp(doc.updatedAtMs)}`);
+    lines.push(`  Writer:      ${doc.writerId ?? 'n/a'}`);
+    lines.push(`  Fingerprint: ${doc.fingerprint ?? 'n/a'}`);
+    lines.push(`  API version: ${doc.apiVersion ?? 'n/a'}`);
+  }
+  lines.push(`  Note:        ${marker.interpretation}`);
+  return lines.join('\n');
+}
+
 export function formatStatusHuman(snapshot: StatusSnapshot): string {
   const summary = summarizeDatabases(snapshot.databases);
   const lines = [
@@ -1298,6 +1499,9 @@ export function formatStatusHuman(snapshot: StatusSnapshot): string {
     `  Couch:       ${snapshot.couchUrl}`,
     `  Config:      STARTUP_MIGRATION_LOCK_ENABLED=${snapshot.lockEnabled}  timeout=${formatDuration(snapshot.timeoutMs)}`,
     formatLockHuman(snapshot.lock, snapshot.timeoutMs),
+    '',
+    '=== Notebook UI-schema marker ===',
+    formatNotebookMarkerHuman(snapshot.notebookMarker),
     '',
     '=== Database versions ===',
     formatDbTable(snapshot.databases),
@@ -1484,6 +1688,7 @@ async function loadSnapshot(
     timeoutMs: config.startupMigrationLockTimeoutMs,
     nowMs,
     lock: loaded.lock,
+    notebookMarker: loaded.notebookMarker,
     databases: loaded.databases,
     unrecognised: loaded.unrecognised,
   });
@@ -1701,6 +1906,33 @@ export async function runCommand(
       result.removed
         ? `${DEBUG_MIGRATION_LOCK_LOG} deleted lock (was ${result.before?.status})`
         : `${DEBUG_MIGRATION_LOCK_LOG} no lock document to delete`
+    );
+    return {exitCode: 0};
+  }
+
+  if (command.name === 'reset-notebook-marker') {
+    const before = await readNotebookMarker(options.db);
+    const current = before
+      ? `currently ${String(before.schemaVersion)}`
+      : 'currently missing';
+    await confirm(
+      command.version === undefined
+        ? `Delete the notebook UI-schema marker (${current}). The next boot doer recreates it at its own target version.`
+        : `Set the notebook UI-schema marker to ${command.version} (${current}). Builds targeting a lower version will skip boot migrate after a foreign lock settlement.`,
+      command.yes
+    );
+    const result = await resetNotebookMarker({
+      db: options.db,
+      nowMs,
+      instanceId,
+      schemaVersion: command.version,
+    });
+    log(
+      !result.changed
+        ? `${DEBUG_MIGRATION_LOCK_LOG} no notebook marker to delete`
+        : result.after
+          ? `${DEBUG_MIGRATION_LOCK_LOG} notebook marker ${result.before ? String(result.before.schemaVersion) : 'missing'} → ${result.after.schemaVersion}`
+          : `${DEBUG_MIGRATION_LOCK_LOG} deleted notebook marker (was ${String(result.before?.schemaVersion ?? 'invalid')})`
     );
     return {exitCode: 0};
   }

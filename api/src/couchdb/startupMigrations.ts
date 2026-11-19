@@ -12,11 +12,15 @@
  *   under a Couch-mediated lock (so replicas do not race):
  *     1. initialise + migrate every DB (`initialiseAndMigrateDBs`, same
  *        path as `pnpm migrate-with-keys`)
- *     2. notebook uiSpec walks (`validateDatabases`)
+ *     2. notebook uiSpec walks (`validateDatabases`), then raise the
+ *        notebook UI-schema marker to this build's
+ *        `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION`
  *
  * Init/migrate run only on the lock doer — waiters attach without rewriting
  * design docs. After a foreign settlement, an older replica skips becoming
- * doer when live versions are already ahead of this process.
+ * doer when recorded DB versions or the notebook marker are already ahead of
+ * this process. Notebook "ahead" comes from the marker, not from individual
+ * notebooks, because uploaded uiSpecs can carry any `schemaVersion`.
  *
  * When the lock is off (default, local/dev): those steps run on this
  * process with no claim/wait. Rapid reloads can otherwise leave a
@@ -30,6 +34,10 @@
  */
 import {config} from '../buildconfig';
 import {getMigrationDb, initialiseAndMigrateDBs} from '.';
+import {
+  writeNotebookSchemaMarker,
+  type NotebookSchemaMarkerStore,
+} from './notebookSchemaMarker';
 import {isStartupMigrationClusterAhead} from './startupMigrationAhead';
 import {getStartupMigrationFingerprint} from './startupMigrationFingerprint';
 import {
@@ -41,8 +49,40 @@ import {
 } from './startupMigrationLock';
 import {validateDatabases} from './validateDatabases';
 
+/**
+ * Raise the notebook UI-schema marker after a walk. Failures are logged and
+ * swallowed: a missing marker only means the next foreign-settlement check
+ * cannot report notebook "ahead".
+ */
+async function recordNotebookSchemaMarker(
+  instanceId: string,
+  fingerprint?: string
+): Promise<void> {
+  try {
+    const result = await writeNotebookSchemaMarker({
+      db: getMigrationDb() as unknown as NotebookSchemaMarkerStore,
+      fingerprint,
+      apiVersion: config.apiVersion,
+      writerId: instanceId,
+    });
+    logStartupMigration('notebook_schema_marker_written', {
+      instance: instanceId,
+      schemaVersion: result.schemaVersion,
+      written: result.written,
+    });
+  } catch (error) {
+    logStartupMigration('notebook_schema_marker_write_failed', {
+      instance: instanceId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 /** Migrate Couch DBs, then notebook uiSpecs. Thrown errors propagate to the caller. */
-async function runMigrationWork(instanceId: string): Promise<void> {
+async function runMigrationWork(
+  instanceId: string,
+  fingerprint?: string
+): Promise<void> {
   logStartupMigration('db_migrate_begin', {instance: instanceId});
   await initialiseAndMigrateDBs({force: true, pushKeys: true});
   logStartupMigration('db_migrate_complete', {instance: instanceId});
@@ -52,6 +92,7 @@ async function runMigrationWork(instanceId: string): Promise<void> {
   logStartupMigration('notebook_migrate_complete', {
     instance: instanceId,
   });
+  await recordNotebookSchemaMarker(instanceId, fingerprint);
 }
 
 /**
@@ -78,14 +119,15 @@ export async function runStartupMigrations(): Promise<void> {
       return;
     }
 
+    const fingerprint = await getStartupMigrationFingerprint();
     await withStartupMigrationLock({
       db: getMigrationDb() as unknown as StartupMigrationLockStore,
       instanceId,
       timeoutMs: config.startupMigrationLockTimeoutMs,
-      fingerprint: await getStartupMigrationFingerprint(),
+      fingerprint,
       apiVersion: config.apiVersion,
       isClusterAhead: isStartupMigrationClusterAhead,
-      run: () => runMigrationWork(instanceId),
+      run: () => runMigrationWork(instanceId, fingerprint),
     });
   } catch (error) {
     // Lock I/O exhausted its retry/backoff streak (or failed before claim/wait
