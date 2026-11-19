@@ -37,6 +37,7 @@ import {
 import {config} from '../src/buildconfig';
 import {getMigrationDb, verifyCouchDBConnection} from '../src/couchdb';
 import {getAllProjectsListing} from '../src/couchdb/notebooks';
+import {getStartupMigrationFingerprint} from '../src/couchdb/startupMigrationFingerprint';
 import {
   STARTUP_MIGRATION_LOCK_ID,
   type StartupMigrationLockAttempt,
@@ -921,6 +922,12 @@ export async function forceUnlock(options: {
       finishedAtMs: options.nowMs,
       status: options.status,
       error: reason,
+      ...(before.fingerprint !== undefined
+        ? {fingerprint: before.fingerprint}
+        : {}),
+      ...(before.apiVersion !== undefined
+        ? {apiVersion: before.apiVersion}
+        : {}),
     },
   ].slice(-MAX_LOCK_HISTORY);
 
@@ -953,6 +960,8 @@ export async function forceClaim(options: {
   instanceId: string;
   timeoutMs: number;
   force?: boolean;
+  fingerprint?: string;
+  apiVersion?: string;
 }): Promise<{
   changed: boolean;
   stolen: boolean;
@@ -972,6 +981,9 @@ export async function forceClaim(options: {
   }
 
   const stolen = before?.status === 'running';
+  const fingerprint =
+    options.fingerprint ?? (await getStartupMigrationFingerprint());
+  const apiVersion = options.apiVersion ?? config.apiVersion;
   const history = before
     ? stolen
       ? [
@@ -982,6 +994,12 @@ export async function forceClaim(options: {
             finishedAtMs: options.nowMs,
             status: 'timed_out' as const,
             error: 'admin claim',
+            ...(before.fingerprint !== undefined
+              ? {fingerprint: before.fingerprint}
+              : {}),
+            ...(before.apiVersion !== undefined
+              ? {apiVersion: before.apiVersion}
+              : {}),
           },
         ].slice(-MAX_LOCK_HISTORY)
       : before.history
@@ -997,6 +1015,8 @@ export async function forceClaim(options: {
     updatedAtMs: options.nowMs,
     attempt: (before?.attempt ?? 0) + 1,
     history,
+    fingerprint,
+    apiVersion,
   };
   await putLock(options.db, after);
   return {changed: true, stolen: Boolean(stolen), before, after};
@@ -1226,6 +1246,12 @@ export function formatLockHuman(lock: LockView, timeoutMs: number): string {
   lines.push(`  Status:      ${doc.status}`);
   lines.push(`  Holder:      ${doc.holderId}`);
   lines.push(`  Attempt:     ${doc.attempt}`);
+  lines.push(
+    `  Fingerprint: ${doc.fingerprint !== undefined ? doc.fingerprint : 'n/a'}`
+  );
+  lines.push(
+    `  API version: ${doc.apiVersion !== undefined ? doc.apiVersion : 'n/a'}`
+  );
   lines.push(`  Started:     ${formatTimestamp(doc.startedAtMs)}`);
   lines.push(`  Updated:     ${formatTimestamp(doc.updatedAtMs)}`);
   if (lock.ageMs !== undefined) {
@@ -1249,8 +1275,15 @@ export function formatLockHuman(lock: LockView, timeoutMs: number): string {
         attempt.finishedAtMs !== undefined
           ? formatDuration(attempt.finishedAtMs - attempt.startedAtMs)
           : 'n/a';
+      const identity =
+        (attempt.fingerprint !== undefined
+          ? `  fingerprint=${attempt.fingerprint}`
+          : '') +
+        (attempt.apiVersion !== undefined
+          ? `  apiVersion=${attempt.apiVersion}`
+          : '');
       lines.push(
-        `    ${index + 1}. ${attempt.status.padEnd(10)} holder=${attempt.holderId}  ${formatTimestamp(attempt.startedAtMs)} → ${formatTimestamp(attempt.finishedAtMs)}  (${duration})` +
+        `    ${index + 1}. ${attempt.status.padEnd(10)} holder=${attempt.holderId}  ${formatTimestamp(attempt.startedAtMs)} → ${formatTimestamp(attempt.finishedAtMs)}  (${duration})${identity}` +
           (attempt.error ? `\n       error=${attempt.error}` : '')
       );
     });

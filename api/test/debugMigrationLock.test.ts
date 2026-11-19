@@ -18,6 +18,7 @@ import {
   forceClaim,
   forceUnlock,
   formatDuration,
+  formatLockHuman,
   formatStatusHuman,
   isDirectExecution,
   loadMigrationsDb,
@@ -249,6 +250,40 @@ describe('debug-migration-lock formatters and classifiers', () => {
     expect(expired.stealable).toBe(true);
   });
 
+  it('formatLockHuman includes fingerprint and apiVersion on the doc and history', () => {
+    const view = classifyLock(
+      {
+        _id: STARTUP_MIGRATION_LOCK_ID,
+        kind: 'startup-migration-lock',
+        status: 'complete',
+        holderId: 'api-a',
+        startedAtMs: 0,
+        updatedAtMs: 10,
+        attempt: 2,
+        fingerprint: 'aabbccddeeff',
+        apiVersion: '1.11.0',
+        history: [
+          {
+            holderId: 'api-a',
+            startedAtMs: 0,
+            finishedAtMs: 10,
+            status: 'complete',
+            fingerprint: 'aabbccddeeff',
+            apiVersion: '1.11.0',
+          },
+        ],
+      },
+      10_000,
+      1_000
+    );
+    const human = formatLockHuman(view, 1_000);
+    expect(human).toContain('fingerprint');
+    expect(human).toContain('aabbccddeeff');
+    expect(human).toContain('apiVersion');
+    expect(human).toMatch(/API version:\s+1\.11\.0/);
+    expect(human).toContain('1.11.0');
+  });
+
   it('describes current, behind, ahead, and unknown versions', () => {
     const peopleTarget = DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
     expect(
@@ -442,6 +477,8 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'crashed',
       startedAtMs: 1_000,
       attempt: 3,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
 
     const unlocked = await forceUnlock({
@@ -457,7 +494,11 @@ describe('debug-migration-lock mutations', () => {
       holderId: 'crashed',
       status: 'failed',
       error: 'stuck doer',
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
+    expect(unlocked.after?.fingerprint).toBe('aabbccddeeff');
+    expect(unlocked.after?.apiVersion).toBe('1.11.0');
 
     const again = await forceUnlock({
       db: asDebuggerDb(db),
@@ -510,9 +551,13 @@ describe('debug-migration-lock mutations', () => {
       nowMs: 1_000,
       instanceId: 'admin-1',
       timeoutMs: 5_000,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
     expect(first.after.status).toBe('running');
     expect(first.after.holderId).toBe('admin-1');
+    expect(first.after.fingerprint).toBe('aabbccddeeff');
+    expect(first.after.apiVersion).toBe('1.11.0');
     expect(first.stolen).toBe(false);
 
     await expect(
@@ -521,6 +566,8 @@ describe('debug-migration-lock mutations', () => {
         nowMs: 2_000,
         instanceId: 'admin-2',
         timeoutMs: 5_000,
+        fingerprint: 'aabbccddeeff',
+        apiVersion: '1.11.0',
       })
     ).rejects.toThrow(/still live/);
 
@@ -530,11 +577,16 @@ describe('debug-migration-lock mutations', () => {
       instanceId: 'admin-2',
       timeoutMs: 5_000,
       force: true,
+      fingerprint: 'newnewnewnew',
+      apiVersion: '1.12.0',
     });
     expect(stolen.stolen).toBe(true);
     expect(stolen.after.holderId).toBe('admin-2');
     expect(stolen.after.attempt).toBe(2);
+    expect(stolen.after.fingerprint).toBe('newnewnewnew');
     expect(stolen.after.history[0]?.status).toBe('timed_out');
+    expect(stolen.after.history[0]?.fingerprint).toBe('aabbccddeeff');
+    expect(stolen.after.history[0]?.apiVersion).toBe('1.11.0');
   });
 
   it('steals an expired running lock without --force', async () => {
@@ -549,6 +601,8 @@ describe('debug-migration-lock mutations', () => {
       nowMs: 10_000,
       instanceId: 'admin',
       timeoutMs: 1_000,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
     });
     expect(claimed.stolen).toBe(true);
     expect(claimed.after.holderId).toBe('admin');
@@ -682,6 +736,54 @@ describe('debug-migration-lock mutations', () => {
       const parsed = JSON.parse(stdout[0]);
       expect(parsed.databases[0].dbName).toBe('people');
       expect(stderr.join('')).not.toContain('{');
+    } finally {
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it('JSON lock output includes fingerprint and apiVersion on the doc and history', async () => {
+    const db = freshDb();
+    await seedLock(db, {
+      status: 'complete',
+      holderId: 'api-a',
+      startedAtMs: 1,
+      fingerprint: 'aabbccddeeff',
+      apiVersion: '1.11.0',
+      history: [
+        {
+          holderId: 'api-a',
+          startedAtMs: 1,
+          finishedAtMs: 2,
+          status: 'complete',
+          fingerprint: 'aabbccddeeff',
+          apiVersion: '1.11.0',
+        },
+      ],
+    });
+    const stdout: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        stdout.push(String(message ?? ''));
+      });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const result = await runCommand(
+        {name: 'lock', json: true},
+        {
+          db: asDebuggerDb(db),
+          nowMs: 10,
+          timeoutMs: 1_000,
+          confirm: async () => undefined,
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      const parsed = JSON.parse(stdout[0]);
+      expect(parsed.doc.fingerprint).toBe('aabbccddeeff');
+      expect(parsed.doc.apiVersion).toBe('1.11.0');
+      expect(parsed.doc.history[0].fingerprint).toBe('aabbccddeeff');
+      expect(parsed.doc.history[0].apiVersion).toBe('1.11.0');
     } finally {
       logSpy.mockRestore();
       errSpy.mockRestore();

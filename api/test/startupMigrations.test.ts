@@ -6,10 +6,14 @@ const getMigrationDb = vi.hoisted(() => vi.fn());
 const initialiseAndMigrateDBs = vi.hoisted(() => vi.fn());
 const validateDatabases = vi.hoisted(() => vi.fn());
 const withStartupMigrationLock = vi.hoisted(() => vi.fn());
+const getStartupMigrationFingerprint = vi.hoisted(() => vi.fn());
+const isStartupMigrationClusterAhead = vi.hoisted(() => vi.fn());
+const PROCESS_FINGERPRINT = 'aabbccddeeff';
 const configMock = vi.hoisted(() => ({
   disableMigrateOnStartup: false,
   startupMigrationLockEnabled: true,
   startupMigrationLockTimeoutMs: 12_345,
+  apiVersion: '1.11.0',
 }));
 
 vi.mock('../src/buildconfig', () => ({
@@ -23,6 +27,14 @@ vi.mock('../src/couchdb', () => ({
 
 vi.mock('../src/couchdb/validateDatabases', () => ({
   validateDatabases,
+}));
+
+vi.mock('../src/couchdb/startupMigrationFingerprint', () => ({
+  getStartupMigrationFingerprint,
+}));
+
+vi.mock('../src/couchdb/startupMigrationAhead', () => ({
+  isStartupMigrationClusterAhead,
 }));
 
 vi.mock('../src/couchdb/startupMigrationLock', async importOriginal => {
@@ -47,16 +59,19 @@ describe('runStartupMigrations', () => {
     initialiseAndMigrateDBs.mockReset();
     validateDatabases.mockReset();
     withStartupMigrationLock.mockReset();
+    getStartupMigrationFingerprint.mockReset();
     withStartupMigrationLock.mockImplementation(async options => {
       await options.run();
       return {role: 'doer', status: 'complete'};
     });
+    getStartupMigrationFingerprint.mockResolvedValue(PROCESS_FINGERPRINT);
     getMigrationDb.mockReturnValue(lockDb);
     initialiseAndMigrateDBs.mockResolvedValue(undefined);
     validateDatabases.mockResolvedValue({valid: true});
     configMock.disableMigrateOnStartup = false;
     configMock.startupMigrationLockEnabled = true;
     configMock.startupMigrationLockTimeoutMs = 12_345;
+    configMock.apiVersion = '1.11.0';
   });
 
   it('passes config timeout and migrate-with-keys flags, then validateDatabases', async () => {
@@ -69,6 +84,10 @@ describe('runStartupMigrations', () => {
     expect(options.db).toBe(lockDb);
     expect(options.timeoutMs).toBe(12_345);
     expect(options.instanceId).toContain(`:${process.pid}:`);
+    expect(options.fingerprint).toBe(PROCESS_FINGERPRINT);
+    expect(options.apiVersion).toBe('1.11.0');
+    expect(options.isClusterAhead).toBe(isStartupMigrationClusterAhead);
+    expect(getStartupMigrationFingerprint).toHaveBeenCalledOnce();
 
     expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
     expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
@@ -105,6 +124,7 @@ describe('runStartupMigrations', () => {
     await expect(runStartupMigrations()).resolves.toBeUndefined();
 
     expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(getStartupMigrationFingerprint).not.toHaveBeenCalled();
     expect(getMigrationDb).not.toHaveBeenCalled();
     expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
     expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
@@ -120,6 +140,7 @@ describe('runStartupMigrations', () => {
     await expect(runStartupMigrations()).resolves.toBeUndefined();
 
     expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(getStartupMigrationFingerprint).not.toHaveBeenCalled();
     expect(getMigrationDb).not.toHaveBeenCalled();
     expect(initialiseAndMigrateDBs).not.toHaveBeenCalled();
     expect(validateDatabases).not.toHaveBeenCalled();

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import PouchDB from 'pouchdb';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {STARTUP_MIGRATION_FINGERPRINT_LENGTH} from '@faims3/data-model';
 import {
   createStartupInstanceId,
   STARTUP_MIGRATION_LOCK_ID,
   STARTUP_MIGRATION_LOCK_IO_BACKOFF_MAX_MS,
   STARTUP_MIGRATION_LOCK_IO_BACKOFF_MS,
   STARTUP_MIGRATION_LOCK_IO_RETRIES,
+  STARTUP_MIGRATION_LOG,
   STARTUP_MIGRATION_LOCK_TIMEOUT_MS,
   startupMigrationIoBackoffMs,
   withStartupMigrationLock,
@@ -132,8 +134,15 @@ describe('startup migration lock', () => {
     const lock = await readLock(db);
     expect(lock.status).toBe('complete');
     expect(lock.holderId).toBe('api-a');
+    expect(lock.fingerprint).toMatch(
+      new RegExp(`^[0-9a-f]{${STARTUP_MIGRATION_FINGERPRINT_LENGTH}}$`)
+    );
+    expect(lock.apiVersion).toEqual(expect.any(String));
+    expect(lock.apiVersion?.length).toBeGreaterThan(0);
     expect(lock.history).toHaveLength(1);
     expect(lock.history[0]?.status).toBe('complete');
+    expect(lock.history[0]?.fingerprint).toBe(lock.fingerprint);
+    expect(lock.history[0]?.apiVersion).toBe(lock.apiVersion);
   });
 
   it('waiter proceeds after the doer completes and does not re-run', async () => {
@@ -514,5 +523,543 @@ describe('startup migration lock', () => {
 
     expect(run).not.toHaveBeenCalled();
     expect(sleeps).toEqual([10, 20]);
+  });
+
+  it('stores fingerprint and apiVersion on claim, settle, and steal', async () => {
+    const db = freshDb();
+    await seedLock(db, {
+      status: 'running',
+      holderId: 'crashed-api',
+      startedAtMs: 0,
+      fingerprint: 'oldoldoldold',
+      apiVersion: '1.10.0',
+    });
+    const run = vi.fn();
+
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'api-b',
+      run,
+      fingerprint: 'newnewnewnew',
+      apiVersion: '1.11.0',
+      timeoutMs: 1_000,
+      now: () => 10_000,
+      pollIntervalMs: 5,
+    });
+
+    const lock = await readLock(db);
+    expect(lock.fingerprint).toBe('newnewnewnew');
+    expect(lock.apiVersion).toBe('1.11.0');
+    expect(lock.history[0]).toMatchObject({
+      holderId: 'crashed-api',
+      status: 'timed_out',
+      fingerprint: 'oldoldoldold',
+      apiVersion: '1.10.0',
+    });
+    expect(lock.history[1]).toMatchObject({
+      holderId: 'api-b',
+      status: 'complete',
+      fingerprint: 'newnewnewnew',
+      apiVersion: '1.11.0',
+    });
+  });
+
+  it('matching waiter proceeds after complete and does not invoke run', async () => {
+    const db = freshDb();
+    const started = deferred();
+    const finish = deferred();
+    const runA = vi.fn(async () => {
+      started.resolve();
+      await finish.promise;
+    });
+    const runB = vi.fn();
+
+    const doer = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'api-a',
+      run: runA,
+      fingerprint: 'same-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 15,
+    });
+    await started.promise;
+
+    const waiter = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'api-b',
+      run: runB,
+      fingerprint: 'same-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 15,
+    });
+
+    finish.resolve();
+    const [doerResult, waiterResult] = await Promise.all([doer, waiter]);
+
+    expect(doerResult).toEqual({role: 'doer', status: 'complete'});
+    expect(waiterResult).toEqual({role: 'waiter', status: 'complete'});
+    expect(runB).not.toHaveBeenCalled();
+  });
+
+  it('mismatched fingerprint re-claims and runs after a foreign complete', async () => {
+    const db = freshDb();
+    const started = deferred();
+    const finish = deferred();
+    const runOld = vi.fn(async () => {
+      started.resolve();
+      await finish.promise;
+    });
+    const runNew = vi.fn();
+    const logs: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        logs.push(String(message ?? ''));
+      });
+
+    try {
+      const doer = withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'old-api',
+        run: runOld,
+        fingerprint: 'old-fingerprint',
+        apiVersion: '1.10.0',
+        pollIntervalMs: 15,
+      });
+      await started.promise;
+
+      const waiter = withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'new-api',
+        run: runNew,
+        fingerprint: 'new-fingerprint',
+        apiVersion: '1.11.0',
+        pollIntervalMs: 15,
+      });
+
+      finish.resolve();
+      const [doerResult, waiterResult] = await Promise.all([doer, waiter]);
+
+      expect(doerResult).toEqual({role: 'doer', status: 'complete'});
+      expect(waiterResult).toEqual({role: 'doer', status: 'complete'});
+      expect(runNew).toHaveBeenCalledOnce();
+      expect(
+        logs.some(line => line.includes('doer_settled_foreign_fingerprint'))
+      ).toBe(true);
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    const lock = await readLock(db);
+    expect(lock.holderId).toBe('new-api');
+    expect(lock.fingerprint).toBe('new-fingerprint');
+    expect(lock.status).toBe('complete');
+  });
+
+  it('legacy settled lock with no fingerprint re-claims and runs', async () => {
+    const db = freshDb();
+    await seedLock(db, {
+      status: 'complete',
+      holderId: 'legacy-api',
+      startedAtMs: 1,
+    });
+    const run = vi.fn();
+
+    const result = await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run,
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+    });
+
+    expect(result).toEqual({role: 'doer', status: 'complete'});
+    expect(run).toHaveBeenCalledOnce();
+    const lock = await readLock(db);
+    expect(lock.holderId).toBe('new-api');
+    expect(lock.fingerprint).toBe('new-fingerprint');
+    expect(lock.history.some(row => row.holderId === 'legacy-api')).toBe(false);
+  });
+
+  it('waiter observing a legacy complete (no fingerprint) logs foreign and re-claims', async () => {
+    const db = freshDb();
+    await seedLock(db, {
+      status: 'running',
+      holderId: 'legacy-api',
+      startedAtMs: Date.now(),
+    });
+    const run = vi.fn();
+    const logs: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        logs.push(String(message ?? ''));
+      });
+
+    try {
+      const waiter = withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'new-api',
+        run,
+        fingerprint: 'new-fingerprint',
+        apiVersion: '1.11.0',
+        pollIntervalMs: 15,
+        timeoutMs: 30_000,
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 30));
+      const running = await readLock(db);
+      expect(running.status).toBe('running');
+      const {_rev, ...rest} = running;
+      await db.put({
+        ...rest,
+        _rev,
+        status: 'complete',
+      });
+
+      const result = await waiter;
+      expect(result).toEqual({role: 'doer', status: 'complete'});
+      expect(run).toHaveBeenCalledOnce();
+      expect(
+        logs.some(line => line.includes('doer_settled_foreign_fingerprint'))
+      ).toBe(true);
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('does not steal a live running lock just because the fingerprint differs', async () => {
+    const db = freshDb();
+    const started = deferred();
+    const finish = deferred();
+    const runOld = vi.fn(async () => {
+      started.resolve();
+      await finish.promise;
+    });
+    const runNew = vi.fn();
+
+    const doer = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'old-api',
+      run: runOld,
+      fingerprint: 'old-fingerprint',
+      apiVersion: '1.10.0',
+      pollIntervalMs: 15,
+    });
+    await started.promise;
+
+    const waiter = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run: runNew,
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 15,
+      timeoutMs: 30_000,
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 40));
+    expect(runNew).not.toHaveBeenCalled();
+
+    finish.resolve();
+    const [doerResult, waiterResult] = await Promise.all([doer, waiter]);
+
+    expect(doerResult).toEqual({role: 'doer', status: 'complete'});
+    expect(waiterResult).toEqual({role: 'doer', status: 'complete'});
+    expect(runNew).toHaveBeenCalledOnce();
+  });
+
+  it('old-after-new downgrade throw settles failed without rejecting', async () => {
+    const db = freshDb();
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run: vi.fn(),
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+    });
+
+    const result = await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'old-api',
+      run: async () => {
+        throw new Error(
+          'Cannot downgrade databases. The DB is at version 6 and the target version is 5.'
+        );
+      },
+      fingerprint: 'old-fingerprint',
+      apiVersion: '1.10.0',
+      pollIntervalMs: 10,
+    });
+
+    expect(result).toEqual({
+      role: 'doer',
+      status: 'failed',
+      error:
+        'Cannot downgrade databases. The DB is at version 6 and the target version is 5.',
+    });
+    const lock = await readLock(db);
+    expect(lock.status).toBe('failed');
+    expect(lock._id).toBe(STARTUP_MIGRATION_LOCK_ID);
+    expect(lock._rev).toEqual(expect.any(String));
+    expect(lock.fingerprint).toBe('old-fingerprint');
+    expect(lock.history[lock.history.length - 1]).toMatchObject({
+      holderId: 'old-api',
+      status: 'failed',
+      fingerprint: 'old-fingerprint',
+      apiVersion: '1.10.0',
+    });
+    expect(lock.history.length).toBeLessThanOrEqual(10);
+  });
+
+  it('skips becoming doer when a foreign complete lock is already ahead', async () => {
+    const db = freshDb();
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run: vi.fn(),
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+    });
+    const before = await readLock(db);
+    const run = vi.fn();
+    const isClusterAhead = vi.fn(async () => true);
+    const logs: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        logs.push(String(message ?? ''));
+      });
+
+    try {
+      const result = await withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'old-api',
+        run,
+        fingerprint: 'old-fingerprint',
+        apiVersion: '1.10.0',
+        pollIntervalMs: 10,
+        isClusterAhead,
+      });
+
+      expect(result).toEqual({role: 'waiter', status: 'complete'});
+      expect(run).not.toHaveBeenCalled();
+      expect(isClusterAhead).toHaveBeenCalled();
+      expect(logs.some(line => line.includes('skip_doer_cluster_ahead'))).toBe(
+        true
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    const after = await readLock(db);
+    expect(after.fingerprint).toBe('new-fingerprint');
+    expect(after.status).toBe('complete');
+    expect(after._rev).toBe(before._rev);
+    expect(after.holderId).toBe('new-api');
+  });
+
+  it('waiter observing a foreign complete skips claim when the cluster is ahead', async () => {
+    const db = freshDb();
+    const started = deferred();
+    const finish = deferred();
+    const runNew = vi.fn(async () => {
+      started.resolve();
+      await finish.promise;
+    });
+    const runOld = vi.fn();
+    const isClusterAhead = vi.fn(async () => true);
+
+    const doer = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run: runNew,
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 15,
+    });
+    await started.promise;
+
+    const waiter = withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'old-api',
+      run: runOld,
+      fingerprint: 'old-fingerprint',
+      apiVersion: '1.10.0',
+      pollIntervalMs: 15,
+      isClusterAhead,
+    });
+
+    finish.resolve();
+    const [doerResult, waiterResult] = await Promise.all([doer, waiter]);
+
+    expect(doerResult).toEqual({role: 'doer', status: 'complete'});
+    expect(waiterResult).toEqual({role: 'waiter', status: 'complete'});
+    expect(runOld).not.toHaveBeenCalled();
+    expect(isClusterAhead).toHaveBeenCalled();
+    const lock = await readLock(db);
+    expect(lock.fingerprint).toBe('new-fingerprint');
+    expect(lock.status).toBe('complete');
+    expect(lock.holderId).toBe('new-api');
+  });
+
+  it('still re-claims a foreign complete when the cluster is not ahead', async () => {
+    const db = freshDb();
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'old-api',
+      run: vi.fn(),
+      fingerprint: 'old-fingerprint',
+      apiVersion: '1.10.0',
+      pollIntervalMs: 10,
+    });
+    const run = vi.fn();
+
+    const result = await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run,
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+      isClusterAhead: async () => false,
+    });
+
+    expect(result).toEqual({role: 'doer', status: 'complete'});
+    expect(run).toHaveBeenCalledOnce();
+    const lock = await readLock(db);
+    expect(lock.fingerprint).toBe('new-fingerprint');
+    expect(lock.holderId).toBe('new-api');
+  });
+
+  it('re-claims a foreign complete when isClusterAhead throws', async () => {
+    const db = freshDb();
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'new-api',
+      run: vi.fn(),
+      fingerprint: 'new-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+    });
+    const run = vi.fn();
+    const logs: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        logs.push(String(message ?? ''));
+      });
+
+    try {
+      const result = await withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'old-api',
+        run,
+        fingerprint: 'old-fingerprint',
+        apiVersion: '1.10.0',
+        pollIntervalMs: 10,
+        isClusterAhead: async () => {
+          throw new Error('listing failed');
+        },
+      });
+
+      expect(result).toEqual({role: 'doer', status: 'complete'});
+      expect(run).toHaveBeenCalledOnce();
+      expect(
+        logs.some(line => line.includes('cluster_ahead_check_failed'))
+      ).toBe(true);
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('matching fingerprint still re-claims even when isClusterAhead is true', async () => {
+    const db = freshDb();
+    await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'api-a',
+      run: vi.fn(),
+      fingerprint: 'same-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+    });
+    const run = vi.fn();
+    const isClusterAhead = vi.fn(async () => true);
+
+    const result = await withStartupMigrationLock({
+      db: asStore(db),
+      instanceId: 'api-b',
+      run,
+      fingerprint: 'same-fingerprint',
+      apiVersion: '1.11.0',
+      pollIntervalMs: 10,
+      isClusterAhead,
+    });
+
+    expect(result).toEqual({role: 'doer', status: 'complete'});
+    expect(run).toHaveBeenCalledOnce();
+    expect(isClusterAhead).not.toHaveBeenCalled();
+  });
+
+  it('named lock events include fingerprint=', async () => {
+    const db = freshDb();
+    const started = deferred();
+    const finish = deferred();
+    const logs: string[] = [];
+    const logSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation((message?: unknown) => {
+        logs.push(String(message ?? ''));
+      });
+
+    try {
+      const doer = withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'api-a',
+        fingerprint: 'log-fingerprint',
+        apiVersion: '1.11.0',
+        pollIntervalMs: 15,
+        run: async () => {
+          started.resolve();
+          await finish.promise;
+        },
+      });
+      await started.promise;
+
+      const waiter = withStartupMigrationLock({
+        db: asStore(db),
+        instanceId: 'api-b',
+        fingerprint: 'log-fingerprint',
+        apiVersion: '1.11.0',
+        pollIntervalMs: 15,
+        run: vi.fn(),
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 40));
+      finish.resolve();
+      await Promise.all([doer, waiter]);
+
+      const required = [
+        'begin',
+        'claimed',
+        'wait_for_doer',
+        'still_waiting',
+        'doer_settled',
+        'settled',
+        'finish',
+      ];
+      for (const event of required) {
+        const line = logs.find(entry =>
+          entry.startsWith(`${STARTUP_MIGRATION_LOG} ${event} `)
+        );
+        expect(line, `missing ${event}`).toBeDefined();
+        expect(line).toContain('fingerprint=log-fingerprint');
+      }
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

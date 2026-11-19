@@ -14,6 +14,10 @@
  *        path as `pnpm migrate-with-keys`)
  *     2. notebook uiSpec walks (`validateDatabases`)
  *
+ * Init/migrate run only on the lock doer — waiters attach without rewriting
+ * design docs. After a foreign settlement, an older replica skips becoming
+ * doer when live versions are already ahead of this process.
+ *
  * When the lock is off (default, local/dev): those steps run on this
  * process with no claim/wait. Rapid reloads can otherwise leave a
  * `running` lock that strands the next boot until
@@ -26,6 +30,8 @@
  */
 import {config} from '../buildconfig';
 import {getMigrationDb, initialiseAndMigrateDBs} from '.';
+import {isStartupMigrationClusterAhead} from './startupMigrationAhead';
+import {getStartupMigrationFingerprint} from './startupMigrationFingerprint';
 import {
   createStartupInstanceId,
   logStartupMigration,
@@ -76,6 +82,9 @@ export async function runStartupMigrations(): Promise<void> {
       db: getMigrationDb() as unknown as StartupMigrationLockStore,
       instanceId,
       timeoutMs: config.startupMigrationLockTimeoutMs,
+      fingerprint: await getStartupMigrationFingerprint(),
+      apiVersion: config.apiVersion,
+      isClusterAhead: isStartupMigrationClusterAhead,
       run: () => runMigrationWork(instanceId),
     });
   } catch (error) {
