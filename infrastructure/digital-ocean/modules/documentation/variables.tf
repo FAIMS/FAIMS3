@@ -9,8 +9,13 @@ variable "region" {
   default     = "syd1"
 }
 
-variable "subdomain" {
-  description = "Subdomain for this deployment, eg. testing.fieldmark.app"
+variable "deployment_domain" {
+  description = "Base domain used to identify this deployment"
+  type        = string
+}
+
+variable "docs_domain" {
+  description = "Full public domain for the documentation site"
   type        = string
 }
 

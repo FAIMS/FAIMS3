@@ -26,7 +26,9 @@ config/dev/secrets.enc.json   # optional SOPS-encrypted overlay
 
 No fixed fallback path is used. The example deployment is intentionally required to receive its config location as a Terraform input so every deployment remains explicit and reproducible.
 
-The shared logic for merging the JSON config and generating the platform env values lives in the reusable module at `infrastructure/digital-ocean/modules/config`. It reads the canonical `core.json` + `do.json` layout, decrypts and merges `secrets.enc.json` via SOPS when present, and invokes the repo-wide `generate-build-config.ts` contract instead of hand-building a custom `.env` flow.
+The shared logic for generating application env values lives in the reusable module at `infrastructure/digital-ocean/modules/config`. It reads `core.json`, decrypts and merges `secrets.enc.json` via SOPS when present, and invokes the repo-wide `generate-build-config.ts` contract instead of hand-building a custom `.env` flow.
+
+`do.json` remains a deployment/infrastructure input and is read by the root deployment to configure DigitalOcean-specific resources (region, instance sizing, storage, etc.), not to derive application env variables.
 
 For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
 
@@ -45,6 +47,17 @@ Review the deployment plan:
 ```bash
 terraform plan
 ```
+
+The plan exposes four generated-config outputs to support local verification:
+
+- `generated_api_public_env`
+- `generated_apps_public_env`
+- `generated_api_secret_env_keys`
+- `generated_apps_secret_env_keys`
+
+Public values are shown in full. Secret values remain hidden; their generated
+environment variable names are shown so the secret-overlay coverage can be
+checked without printing credentials into terminal logs.
 
 Deploy the infrastructure:
 

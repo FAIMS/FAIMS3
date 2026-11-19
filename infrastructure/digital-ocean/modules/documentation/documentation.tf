@@ -14,13 +14,13 @@ locals {
 
 resource "digitalocean_app" "fieldmark-docs" {
   spec {
-    name   = "docs-${replace(var.subdomain, ".", "-")}"
+    name   = "docs-${replace(var.deployment_domain, ".", "-")}"
     region = var.region
 
     domain {
-      name = "docs.${var.subdomain}"
+      name = var.docs_domain
       type = "PRIMARY"
-      zone = var.subdomain
+      zone = var.deployment_domain
     }
 
     alert {

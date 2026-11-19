@@ -6,12 +6,20 @@ variable "do_token" {
     error_message = "do_token must be set to a non-placeholder value."
   }
 }
-variable "subdomain" {
-  description = "Subdomain for this deployment, eg. testing.fieldmark.app"
+variable "deployment_domain" {
+  description = "Base domain used to identify this deployment"
   type        = string
   validation {
-    condition     = trimspace(var.subdomain) != "" && can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}$", var.subdomain))
-    error_message = "subdomain must be a non-empty FQDN-style hostname."
+    condition     = trimspace(var.deployment_domain) != "" && can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}$", var.deployment_domain))
+    error_message = "deployment_domain must be a non-empty FQDN-style hostname."
+  }
+}
+variable "api_domain" {
+  description = "Full public domain for the API service"
+  type        = string
+  validation {
+    condition     = trimspace(var.api_domain) != "" && can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}$", var.api_domain))
+    error_message = "api_domain must be a non-empty FQDN-style hostname."
   }
 }
 variable "contact_email" {

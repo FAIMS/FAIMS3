@@ -12,13 +12,13 @@ locals {
 
 resource "digitalocean_app" "conductor_app_service" {
   spec {
-    name   = "api-${replace(var.subdomain, ".", "-")}"
+    name   = "api-${replace(var.deployment_domain, ".", "-")}"
     region = var.region
 
     domain {
-      name = "api.${var.subdomain}"
+      name = var.api_domain
       type = "PRIMARY"
-      zone = var.subdomain
+      zone = var.deployment_domain
     }
 
     alert {

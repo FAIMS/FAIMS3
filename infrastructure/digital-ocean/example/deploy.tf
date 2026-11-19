@@ -9,7 +9,12 @@ locals {
   do_config   = jsondecode(file("${var.config_dir}/do.json"))
 
   contact_email = try(local.config_core.support.supportEmail, try(local.do_config.contact_email, "support@example.com"))
-  base_domain   = try(local.do_config.baseDomain, "example.com")
+  base_domain   = local.config_core.domains.base
+  api_domain    = "${local.config_core.domains.services.conductor}.${local.base_domain}"
+  app_domain    = "${local.config_core.domains.services.app}.${local.base_domain}"
+  couch_domain  = "${local.config_core.domains.services.couch}.${local.base_domain}"
+  docs_domain   = "${local.config_core.domains.services.docs}.${local.base_domain}"
+  web_domain    = "${local.config_core.domains.services.web}.${local.base_domain}"
   region        = try(local.do_config.region, "syd1")
 
   conductor_image_tag = try(local.do_config.conductor.imageTag, "replace-with-pinned-tag")
@@ -77,6 +82,16 @@ EOT
     split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
     if length(split("=", line)) >= 2 && !startswith(line, "#") && trimspace(line) != ""
   }
+  api_public_env_map = {
+    for line in split("\n", module.config_api.public_env) :
+    split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
+    if length(split("=", line)) >= 2 && trimspace(line) != ""
+  }
+  apps_public_env_map = {
+    for line in split("\n", module.config_apps.public_env) :
+    split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
+    if length(split("=", line)) >= 2 && trimspace(line) != ""
+  }
 }
 
 module "config_api" {
@@ -93,7 +108,8 @@ module "config_apps" {
 
 module "couchdb" {
   source              = "../modules/couchdb"
-  subdomain           = local.base_domain
+  deployment_domain   = local.base_domain
+  couch_domain        = local.couch_domain
   local_ini_b64       = base64encode(local.generated_local_ini)
   couchdb_env_b64     = base64encode(local.generated_api_env)
   do_token            = var.do_token
@@ -108,16 +124,19 @@ module "couchdb" {
 module "apps" {
   source = "../modules/webapps"
 
-  subdomain     = local.base_domain
-  env_b64       = base64encode(local.generated_apps_env)
-  do_token      = var.do_token
-  region        = local.region
-  contact_email = local.contact_email
+  deployment_domain = local.base_domain
+  app_domain        = local.app_domain
+  web_domain        = local.web_domain
+  env_b64           = base64encode(local.generated_apps_env)
+  do_token          = var.do_token
+  region            = local.region
+  contact_email     = local.contact_email
 }
 
 module "api" {
   source                     = "../modules/api"
-  subdomain                  = local.base_domain
+  deployment_domain          = local.base_domain
+  api_domain                 = local.api_domain
   contact_email              = local.contact_email
   do_token                   = var.do_token
   conductor_env_b64          = base64encode(module.config_api.public_env)
@@ -131,7 +150,8 @@ module "api" {
 
 module "documentation" {
   source              = "../modules/documentation"
-  subdomain           = local.base_domain
+  deployment_domain   = local.base_domain
+  docs_domain         = local.docs_domain
   env_b64             = base64encode(local.generated_apps_env)
   do_token            = var.do_token
   region              = local.region
@@ -152,5 +172,25 @@ variable "do_token" {
 variable "registry_credentials" {
   description = "Github registry credentials for pulling private images"
   type        = any
+}
+
+output "generated_api_public_env" {
+  description = "Generated API environment values that do not originate from secrets.enc.json."
+  value       = local.api_public_env_map
+}
+
+output "generated_apps_public_env" {
+  description = "Generated app and web environment values that do not originate from secrets.enc.json."
+  value       = local.apps_public_env_map
+}
+
+output "generated_api_secret_env_keys" {
+  description = "Names of API environment values sourced from secrets.enc.json; values remain hidden."
+  value       = module.config_api.secret_env_keys
+}
+
+output "generated_apps_secret_env_keys" {
+  description = "Names of app and web environment values sourced from secrets.enc.json; values remain hidden."
+  value       = module.config_apps.secret_env_keys
 }
 

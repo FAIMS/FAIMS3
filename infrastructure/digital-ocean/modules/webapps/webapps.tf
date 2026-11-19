@@ -4,7 +4,7 @@ locals {
     split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
     if length(split("=", line)) >= 2 && !startswith(line, "#") && line != ""
   }
-  
+
   # Filter VITE_ variables for build-time environment
   vite_vars = { for k, v in local.env_vars : k => v if startswith(k, "VITE_") }
 }
@@ -17,27 +17,27 @@ output "vite_variables_debug" {
 
 resource "digitalocean_app" "fieldmark-app" {
   spec {
-    name   = "app-${replace(var.subdomain, ".", "-")}"
+    name   = "app-${replace(var.deployment_domain, ".", "-")}"
     region = var.region
-    
+
     domain {
-      name = "app.${var.subdomain}"
+      name = var.app_domain
       type = "PRIMARY"
-      zone = var.subdomain
+      zone = var.deployment_domain
     }
 
     alert {
       rule = "DEPLOYMENT_FAILED"
     }
-    
+
     alert {
       rule = "DOMAIN_FAILED"
     }
 
     static_site {
-      name               = "app"
-      catchall_document  = "index.html"
-      environment_slug   = "node-js"
+      name              = "app"
+      catchall_document = "index.html"
+      environment_slug  = "node-js"
 
       github {
         branch         = "main"
@@ -58,27 +58,6 @@ resource "digitalocean_app" "fieldmark-app" {
         }
       }
 
-      # Additional required build-time variables
-      env {
-        key   = "VITE_PRODUCTION_BUILD"
-        value = "true"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_CONDUCTOR_URL"
-        value = "https://api.${var.subdomain}"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_APP_URL"
-        value = "https://app.${var.subdomain}"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_WEB_URL"
-        value = "https://dashboard.${var.subdomain}"
-        scope = "BUILD_TIME"
-      }
     }
   }
 }
@@ -86,27 +65,27 @@ resource "digitalocean_app" "fieldmark-app" {
 # Dashboard (web management interface)
 resource "digitalocean_app" "fieldmark-dashboard" {
   spec {
-    name   = "dashboard-${replace(var.subdomain, ".", "-")}"
+    name   = "dashboard-${replace(var.deployment_domain, ".", "-")}"
     region = var.region
-    
+
     domain {
-      name = "dashboard.${var.subdomain}"
+      name = var.web_domain
       type = "PRIMARY"
-      zone = var.subdomain
+      zone = var.deployment_domain
     }
 
     alert {
       rule = "DEPLOYMENT_FAILED"
     }
-    
+
     alert {
       rule = "DOMAIN_FAILED"
     }
 
     static_site {
-      name               = "dashboard"
-      catchall_document  = "index.html"
-      environment_slug   = "node-js"
+      name              = "dashboard"
+      catchall_document = "index.html"
+      environment_slug  = "node-js"
 
       github {
         branch         = "main"
@@ -125,27 +104,6 @@ resource "digitalocean_app" "fieldmark-dashboard" {
           value = env.value
           scope = "BUILD_TIME"
         }
-      }
-      # Additional required build-time variables
-      env {
-        key   = "VITE_PRODUCTION_BUILD"
-        value = "true"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_API_URL"
-        value = "https://api.${var.subdomain}"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_APP_URL"
-        value = "https://app.${var.subdomain}"
-        scope = "BUILD_TIME"
-      }
-      env {
-        key = "VITE_WEB_URL"
-        value = "https://dashboard.${var.subdomain}"
-        scope = "BUILD_TIME"
       }
     }
   }

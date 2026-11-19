@@ -76,7 +76,7 @@ resource "random_string" "cookie" {
 resource "digitalocean_volume" "couchdb-volume" {
   region                  = var.region
   count                   = var.instance_count
-  name                    = "couchdb-data-${count.index}-${replace(var.subdomain, ".", "-")}"
+  name                    = "couchdb-data-${count.index}-${replace(var.deployment_domain, ".", "-")}"
   size                    = var.couchdb_volume_size
   initial_filesystem_type = "ext4"
   description             = "couchdb storage"
@@ -90,7 +90,7 @@ resource "digitalocean_volume_attachment" "couchdb-volume" {
 
 resource "digitalocean_droplet" "couchdb" {
   image  = "ubuntu-24-04-x64"
-  name   = "couchdb-${count.index}-${var.subdomain}"
+  name   = "couchdb-${count.index}-${var.deployment_domain}"
   region = var.region
   size   = var.droplet_size
   count  = var.instance_count
@@ -101,7 +101,7 @@ resource "digitalocean_droplet" "couchdb" {
 }
 
 resource "digitalocean_domain" "couchdb-instance" {
-  name       = "couchdb-${count.index}.${var.subdomain}"
+  name       = "couchdb-${count.index}.${var.deployment_domain}"
   ip_address = digitalocean_droplet.couchdb[count.index].ipv4_address
   count      = var.instance_count
 }

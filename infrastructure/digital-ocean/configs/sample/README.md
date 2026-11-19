@@ -4,8 +4,9 @@ This directory is a starting point for the DigitalOcean deployment configuration
 
 The long-term goal is to follow the same pattern used by the AWS deployment path:
 
-- `core.json` holds shared, non-secret deployment/runtime configuration
-- `do.json` holds DigitalOcean-specific deployment settings and runtime resources
+- `core.json` holds shared, non-secret deployment/runtime configuration,
+  including the canonical `domains.base` and service hostnames
+- `do.json` holds DigitalOcean-only resource settings
 - `secrets.enc.json` is optional and encrypted via SOPS for secret overlays
 - config is pulled into a local mirror under `config/<environment>/` via `scripts/sync-deployment-config.sh`
 

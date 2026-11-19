@@ -18,7 +18,29 @@ The DO deployment should follow the same pattern as the AWS deployment flow:
 - local mirror under `config/<environment>/`
 - sync via `scripts/sync-deployment-config.sh`
 
+`core.json` is the sole source of truth for the deployment domain:
+`domains.base` and `domains.services` are shared with the mobile and web
+applications. DigitalOcean infrastructure must derive its hostnames from that
+contract rather than duplicating a base domain in `do.json`.
+
+The deployment root constructs the full API, app, web, CouchDB, and docs
+domains from those shared settings and passes them explicitly into each module.
+Modules retain `deployment_domain` for resource naming and DNS zone selection,
+but must not synthesize service hostnames from provider-specific defaults.
+
 A sample config layout is provided under `infrastructure/digital-ocean/configs/sample/`.
+
+`do.json` has a strict, DigitalOcean-local schema in `validateConfig.ts`. It
+currently covers only the fields consumed by the Terraform deployment and
+rejects unknown fields so new settings must be added deliberately as modules
+adopt them.
+
+Validate an environment directory with:
+
+```bash
+pnpm --filter=@faims3/infra-digital-ocean validate-config \
+  --config-dir "$PWD/infrastructure/digital-ocean/configs/sample"
+```
 
 ## Planned migration
 

@@ -27,8 +27,13 @@ variable "instance_count" {
   default     = 1
 }
 
-variable "subdomain" {
-  description = "Subdomain for this deployment, eg. testing.fieldmark.app"
+variable "deployment_domain" {
+  description = "Base domain used to identify this deployment"
+  type        = string
+}
+
+variable "couch_domain" {
+  description = "Full public domain for CouchDB"
   type        = string
 }
 
