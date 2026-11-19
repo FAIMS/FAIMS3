@@ -15,6 +15,7 @@ The DO deployment should follow the same pattern as the AWS deployment flow:
 - `core.json` for shared non-secret runtime config
 - `do.json` for DigitalOcean-specific deployment settings
 - optional encrypted `secrets.enc.json` overlays via SOPS
+- `do-secrets.enc.json` for DigitalOcean-only backup credentials
 - local mirror under `config/<environment>/`
 - sync via `scripts/sync-deployment-config.sh`
 

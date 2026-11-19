@@ -28,6 +28,7 @@ The deployment is driven by an explicit `config_dir` input. This must point at t
 config/dev/core.json
 config/dev/do.json
 config/dev/secrets.enc.json   # optional SOPS-encrypted overlay
+config/dev/do-secrets.enc.json # required SOPS-encrypted DigitalOcean backup secrets
 ```
 
 No fixed fallback path is used. The example deployment is intentionally required to receive its config location as a Terraform input so every deployment remains explicit and reproducible.
@@ -35,6 +36,12 @@ No fixed fallback path is used. The example deployment is intentionally required
 The shared logic for generating application env values lives in the reusable module at `infrastructure/digital-ocean/modules/config`. It reads `core.json`, decrypts and merges `secrets.enc.json` via SOPS when present, and invokes the repo-wide `generate-build-config.ts` contract instead of hand-building a custom `.env` flow.
 
 `do.json` remains a deployment/infrastructure input and is read by the root deployment to configure DigitalOcean-specific resources (region, instance sizing, storage, etc.), not to derive application env variables.
+
+DigitalOcean-only secrets live separately in `do-secrets.enc.json`. The
+deployment currently requires `backup.accessKeyId`,
+`backup.secretAccessKey`, and `backup.resticPassword`; this file is decrypted
+by the dedicated `do-secrets` module and is never merged into `core.json` or
+passed to `generate-build-config`.
 
 For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
 

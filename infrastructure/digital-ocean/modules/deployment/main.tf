@@ -50,17 +50,21 @@ module "config_apps" {
   platform   = "apps"
 }
 
+module "do_secrets" {
+  source     = "../do-secrets"
+  config_dir = var.config_dir
+}
+
 module "couchdb" {
   source                   = "../couchdb"
   deployment_domain        = local.base_domain
   couch_domain             = local.couch_domain
   cookie_secret            = try(local.api_env_map.FAIMS_COOKIE_SECRET, "")
-  backup_endpoint          = try(local.do_config.storage.endpoint, "https://syd1.digitaloceanspaces.com")
-  backup_bucket            = try(local.do_config.storage.bucket, "fieldmark-example-backups")
-  # TODO:  should be separate S3 keys for backup storage rather than reusing the attachment keys
-  backup_access_key_id     = try(local.api_env_map.ATTACHMENT_S3_ACCESS_KEY_ID, "")
-  backup_secret_access_key = try(local.api_env_map.ATTACHMENT_S3_SECRET_ACCESS_KEY, "")
-  restic_password          = try(local.api_env_map.FAIMS_COOKIE_SECRET, "")
+  backup_endpoint          = local.do_config.backup.endpoint
+  backup_bucket            = local.do_config.backup.bucket
+  backup_access_key_id     = module.do_secrets.backup_access_key_id
+  backup_secret_access_key = module.do_secrets.backup_secret_access_key
+  restic_password          = module.do_secrets.restic_password
   do_token                 = var.do_token
   region                   = local.region
   droplet_size             = local.couch_droplet_size

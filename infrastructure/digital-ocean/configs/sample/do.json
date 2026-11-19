@@ -12,5 +12,9 @@
   "storage": {
     "bucket": "fieldmark-map-assets",
     "endpoint": "https://syd1.digitaloceanspaces.com"
+  },
+  "backup": {
+    "bucket": "fieldmark-example-backups",
+    "endpoint": "https://syd1.digitaloceanspaces.com"
   }
 }
