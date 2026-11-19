@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
+
+/*
+ * Description:
+ *   Pixel-constant offset of the heading triangle from the GPS dot.
+ *   `headingRadians` is true-north clockwise after displayHeadingDegrees.
+ */
+
 /** Gap between the GPS dot and the heading triangle, in screen pixels. */
 export const HEADING_INDICATOR_PIXEL_OFFSET = 23;
 
