@@ -400,7 +400,6 @@ In **`aws.json`**:
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
-      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,
@@ -412,6 +411,8 @@ In **`aws.json`**:
     "enhancedObservability": true
   },
 ```
+
+`autoScaling.desiredCapacity` is optional and should usually be omitted. When set, every service update writes that value as ECS `DesiredCount` and resets the live autoscaled count. Omit it so CloudFormation uses 1 on create and keeps the current count on update; `minCapacity` is the floor.
 
 `core.migration.disableMigrateOnStartup` is optional (default `false`). When `true`, CDK sets `DISABLE_MIGRATE_ON_STARTUP=true` and API boot skips Couch migrate and notebook walks — use only when migrate is handled out of band (`pnpm migrate-with-keys`) or for a debug stack against an already-migrated DB. The lock is then unused: omit `startupMigrationLockEnabled` or set it `false`. Setting `startupMigrationLockEnabled: true` together with `disableMigrateOnStartup: true` fails config validation (nothing to lock).
 
@@ -441,7 +442,6 @@ The remaining options are for your consideration. They are largely performance, 
         "cpu": 2048,
         "memory": 4096,
         "autoScaling": {
-            "desiredCapacity": 2,
             "minCapacity": 2,
             "maxCapacity": 5,
             "targetCpuUtilization": 60,

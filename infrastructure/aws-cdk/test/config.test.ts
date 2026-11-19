@@ -16,6 +16,16 @@ import {
   parseConfig,
 } from '../lib/config';
 
+const autoScaling = (overrides: Record<string, unknown> = {}) => ({
+  minCapacity: 1,
+  maxCapacity: 2,
+  targetCpuUtilization: 70,
+  targetMemoryUtilization: 70,
+  scaleInCooldown: 30,
+  scaleOutCooldown: 30,
+  ...overrides,
+});
+
 const minimalAws = (overrides: Record<string, unknown> = {}) => ({
   stackName: 'faims-test',
   hostedZone: {id: 'Z123', name: 'example.com'},
@@ -33,15 +43,7 @@ const minimalAws = (overrides: Record<string, unknown> = {}) => ({
     conductorDockerImage: 'ghcr.io/faims/faims3-api',
     cpu: 256,
     memory: 512,
-    autoScaling: {
-      desiredCapacity: 1,
-      minCapacity: 1,
-      maxCapacity: 2,
-      targetCpuUtilization: 70,
-      targetMemoryUtilization: 70,
-      scaleInCooldown: 30,
-      scaleOutCooldown: 30,
-    },
+    autoScaling: autoScaling({desiredCapacity: 1}),
   },
   domains: {baseDomain: 'example.com'},
   ...overrides,
@@ -110,17 +112,61 @@ describe('ConductorConfigSchema is AWS-only', () => {
         conductorDockerImage: 'x',
         cpu: 256,
         memory: 512,
-        autoScaling: {
-          desiredCapacity: 1,
-          minCapacity: 1,
-          maxCapacity: 2,
-          targetCpuUtilization: 70,
-          targetMemoryUtilization: 70,
-          scaleInCooldown: 30,
-          scaleOutCooldown: 30,
-        },
+        autoScaling: autoScaling({desiredCapacity: 1}),
         name: 'should not be here',
       })
+    ).toThrow(ZodError);
+  });
+});
+
+describe('ConductorConfigSchema autoScaling.desiredCapacity', () => {
+  const conductor = (scaling: Record<string, unknown>) => ({
+    ...minimalAws().conductor,
+    autoScaling: scaling,
+  });
+
+  it('parses when desiredCapacity is omitted and leaves it undefined', () => {
+    const parsed = ConductorConfigSchema.parse(conductor(autoScaling()));
+    expect(parsed.autoScaling.desiredCapacity).toBeUndefined();
+  });
+
+  it('parses when desiredCapacity is a positive integer inside [minCapacity, maxCapacity]', () => {
+    expect(
+      ConductorConfigSchema.parse(conductor(autoScaling({desiredCapacity: 1})))
+        .autoScaling.desiredCapacity
+    ).toBe(1);
+    expect(
+      ConductorConfigSchema.parse(
+        conductor(
+          autoScaling({minCapacity: 1, maxCapacity: 5, desiredCapacity: 5})
+        )
+      ).autoScaling.desiredCapacity
+    ).toBe(5);
+  });
+
+  it('rejects desiredCapacity below minCapacity', () => {
+    expect(() =>
+      ConductorConfigSchema.parse(
+        conductor(
+          autoScaling({minCapacity: 2, maxCapacity: 5, desiredCapacity: 1})
+        )
+      )
+    ).toThrow(ZodError);
+  });
+
+  it('rejects desiredCapacity above maxCapacity', () => {
+    expect(() =>
+      ConductorConfigSchema.parse(
+        conductor(
+          autoScaling({minCapacity: 1, maxCapacity: 2, desiredCapacity: 3})
+        )
+      )
+    ).toThrow(ZodError);
+  });
+
+  it('rejects a non-positive desiredCapacity', () => {
+    expect(() =>
+      ConductorConfigSchema.parse(conductor(autoScaling({desiredCapacity: 0})))
     ).toThrow(ZodError);
   });
 });
