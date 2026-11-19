@@ -17,6 +17,7 @@ FAIMS3 Developer Documentation
    markdown/CouchMigrations.md
    markdown/CouchVersionUpgradeGuideAWS.md
    markdown/Data-Collection-Plans.md
+   markdown/DatabaseMigrationProcess.md
    markdown/DeployingAWSStack.md
    markdown/Documentation/UserDocsThemeConfiguration.md
    markdown/GeospatialExport.md

@@ -15,6 +15,8 @@ Includes:
 
 The system maintains a separate migration metadata database that tracks the version and migration history of each application database, ensuring that migrations are applied exactly once and in the correct sequence.
 
+This page is about **writing** migrations. For how they are **run** (on API startup, from the command line, and under the clustered startup lock), see [How database migrations run](./DatabaseMigrationProcess.md).
+
 ## Core Concepts
 
 ### Database Types
@@ -241,7 +243,7 @@ Add your examples to the `MIGRATION_TEST_CASES` e.g.
 
 ### 5. Run the Migration
 
-To run migrations, you need to ensure your `.env` and other environment is setup to target your deployment properly. This will require having admin credentials in your `.env` so proceed with caution for production environments.
+New steps run automatically the next time the API starts. To run them by hand, use `pnpm run migrate` from `api/` with `.env` targeting your deployment (this needs admin credentials, so take care with production). See [How database migrations run](./DatabaseMigrationProcess.md).
 
 ## Migration Examples
 
