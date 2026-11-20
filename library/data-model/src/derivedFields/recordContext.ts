@@ -10,12 +10,42 @@
 
 import {HydratedRecordDocument} from '../databaseEngine/types';
 import {
+  CompiledNotebookUiSpec,
   CREATED_TIME_ID,
   CREATOR_NAME_ID,
   ValuesObject,
 } from '../uiSpecification';
 import {logWarn} from '../logging';
 import {formatTimestamp} from '../utils';
+
+/**
+ * The engine surface derived-value resolution reads through. Declared
+ * structurally because the engine imports this module's resolver, so
+ * importing the engine here would be circular. DataEngine satisfies it.
+ */
+export interface DerivedReadEngine {
+  uiSpec: CompiledNotebookUiSpec;
+  core: {
+    getRecord(id: string): Promise<{type: string; heads?: string[]}>;
+  };
+  hydrated: {
+    getHydratedRecord(args: {recordId: string}): Promise<{
+      revision: {
+        relationship?: {parent?: ReadonlyArray<{recordId: string}>};
+      };
+    }>;
+    getFieldValues(args: {
+      revisionId: string;
+      fields: string[];
+    }): Promise<Record<string, unknown>>;
+  };
+  form: {
+    getExistingFormData(args: {
+      recordId: string;
+      derivedDepth?: number;
+    }): Promise<{formId: string; data: Record<string, unknown>}>;
+  };
+}
 
 export interface RecordContext {
   // timestamp ms created

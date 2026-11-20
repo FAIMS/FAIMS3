@@ -103,8 +103,9 @@ record's cutter ID. The Visual Builder lists the available linked
 record fields as "Link field > Field".
 
 As with parent references, a linked record reference may point at the
-linked record's Templated Strings and computed fields, whose stored
-values are used.
+linked record's Templated Strings and computed fields. A referenced
+computed field gives its current value; a referenced Templated String
+gives its stored value.
 
 If nothing is linked, the reference renders as empty text. The values
 update while editing whenever the link is changed, and otherwise

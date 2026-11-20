@@ -23,6 +23,7 @@ import {
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
+import {exportEngine} from './exportEngine';
 
 // The set of headers which come first in CSV exports, and are always present
 export const CSV_PREFIX_HEADERS = [
@@ -223,6 +224,7 @@ export const appendAllCSVsToArchive = async ({
     dataDb,
     projectId,
     uiSpecification,
+    engine: exportEngine(dataDb, uiSpecification),
     // No viewID - iterate all records
     includeAttachments: false,
     viewID: undefined,
@@ -403,6 +405,7 @@ export const appendCSVToArchive = async ({
     dataDb,
     projectId,
     uiSpecification,
+    engine: exportEngine(dataDb, uiSpecification),
     viewID,
     includeAttachments: false,
     ...exportFilter,
@@ -498,6 +501,7 @@ export const streamNotebookRecordsAsCSV = async (
     dataDb,
     projectId,
     uiSpecification,
+    engine: exportEngine(dataDb, uiSpecification),
     viewID,
     // Don't use the attachment loader to download attachments - we don't need
     // the actual data, just the HRID of the record + fieldname is sufficient

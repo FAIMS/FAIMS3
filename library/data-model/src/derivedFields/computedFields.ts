@@ -44,6 +44,11 @@ const DERIVED_FIELD_NAMES = [
   TEMPLATED_STRING_FIELD_NAME,
 ];
 
+/** Whether `componentName` is a computed field. */
+export function isComputedFieldName(componentName: string): boolean {
+  return COMPUTED_FIELD_NAMES.includes(componentName);
+}
+
 /** Whether `componentName` is a derived field (computed or templated). */
 export function isDerivedFieldName(componentName: string): boolean {
   return DERIVED_FIELD_NAMES.includes(componentName);

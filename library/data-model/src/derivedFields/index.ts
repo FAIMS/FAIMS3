@@ -3,6 +3,7 @@ export * from './computedFields';
 export * from './conditionValues';
 export * from './parentFieldScan';
 export * from './recordContext';
+export * from './resolveComputedValues';
 export * from './resolveParentField';
 export * from './resolveParentValues';
 export * from './resolveRelatedValues';

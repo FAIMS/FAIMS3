@@ -75,6 +75,7 @@ import {
   hasUpdatedTimeFilter,
   queryRecordIdsByUpdated,
 } from '../data_storage/updatedTimeFilter';
+import {resolveComputedValues} from '../derivedFields/resolveComputedValues';
 
 // =======
 // HELPERS
@@ -252,6 +253,10 @@ function revisionHistoryEntriesFromDocs(
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 /** Field `type` when the UI spec has no `type-returned` for that field. */
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
+
+/** Parent or link hops a read resolves computed values across; records
+ * further out contribute their stored values. */
+const MAX_DERIVED_DEPTH = 2;
 /** CouchDB `allDocs({keys})` batch size — keeps the keys body modest. */
 const ALL_DOCS_KEY_CHUNK = 200;
 /** In-flight `allDocs` chunks. Node's per-host socket pool is small (~15). */
@@ -2225,16 +2230,20 @@ class FormOperations {
    * @param recordId - The record to load
    * @param revisionId - Specific revision; omitted → resolve head via `config`
    * @param config - Conflict behaviour for head resolution
+   * @param derivedDepth - Hops already resolved to reach this record; set by
+   * derived-value resolution when it reads a parent or linked record
    * @returns Form payload plus revision/form ids
    */
   async getExistingFormData({
     recordId,
     revisionId,
     config = {},
+    derivedDepth = 0,
   }: {
     recordId: string;
     revisionId?: string;
     config?: Partial<HydratedRecordConfig>;
+    derivedDepth?: number;
   }): Promise<InitialFormData> {
     // Grab the hydrated version
     const hydrated = await this.hydrated.getHydratedRecord({
@@ -2242,7 +2251,61 @@ class FormOperations {
       revisionId,
       config,
     });
-    return initialFormDataFromHydrated(hydrated);
+    const formData = initialFormDataFromHydrated(hydrated);
+    // A past revision shows what was saved, and stored values stand in past
+    // the depth cap.
+    if (
+      derivedDepth > MAX_DERIVED_DEPTH ||
+      !hydrated.record.heads.includes(hydrated.revision._id)
+    ) {
+      return formData;
+    }
+    return this.withComputedValues({
+      formData,
+      recordId,
+      parents: hydrated.revision.relationship?.parent,
+      derivedDepth,
+    });
+  }
+
+  /** Overlay computed field values resolved from the record's current inputs. */
+  private async withComputedValues({
+    formData,
+    recordId,
+    parents,
+    derivedDepth,
+  }: {
+    formData: InitialFormData;
+    recordId: string;
+    parents?: ReadonlyArray<{recordId: string}>;
+    derivedDepth: number;
+  }): Promise<InitialFormData> {
+    const values: Record<string, unknown> = {};
+    for (const [fieldName, entry] of Object.entries(formData.data)) {
+      values[fieldName] = entry.data;
+    }
+    const updates = await resolveComputedValues({
+      engine: {
+        uiSpec: this.uiSpec,
+        core: this.core,
+        hydrated: this.hydrated,
+        form: this,
+      },
+      recordId,
+      formId: formData.formId,
+      values,
+      parents,
+      derivedDepth,
+    });
+    const fieldNames = Object.keys(updates);
+    if (fieldNames.length === 0) {
+      return formData;
+    }
+    const data = {...formData.data};
+    for (const fieldName of fieldNames) {
+      data[fieldName] = {...data[fieldName], data: updates[fieldName]};
+    }
+    return {...formData, data};
   }
 
   /**
@@ -2322,11 +2385,18 @@ class FormOperations {
         });
         continue;
       }
+      // One row at a time: parallel parent reads would saturate Couch.
+      const formData = await this.withComputedValues({
+        formData: result.formData,
+        recordId: result.stub.recordId,
+        parents: result.formData.context.revision.relationship?.parent,
+        derivedDepth: 0,
+      });
       records.push({
         ...result.stub,
-        formId: result.formData.formId,
-        data: result.formData.data,
-        context: result.formData.context,
+        formId: formData.formId,
+        data: formData.data,
+        context: formData.context,
         revisionId: result.stub.revisionId,
       });
     }
