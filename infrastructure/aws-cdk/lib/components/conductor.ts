@@ -449,7 +449,11 @@ export class FaimsConductor extends Construct {
     this.fargateService = new ecs.FargateService(this, 'conductor-service', {
       cluster: this.cluster,
       taskDefinition: conductorTaskDfn,
-      // Target number of tasks to run
+      // When desiredCapacity is omitted this is undefined, so CDK leaves
+      // DesiredCount off AWS::ECS::Service. CloudFormation then uses 1 on
+      // create and keeps the live count on update; minCapacity is the floor.
+      // Do not substitute 1 or minCapacity — a number would reset the
+      // autoscaled count on every deploy.
       desiredCount: props.config.autoScaling.desiredCapacity,
       securityGroups: [this.serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT

@@ -282,6 +282,14 @@ test('legacy AWS config migrates to core + secrets + aws that all validate', asy
   );
   assert.equal(aws.conductor.name, undefined);
   assert.equal(aws.conductor.ephemeralStorageGiB, 40);
+  assert.deepEqual(
+    (
+      result.aws as {
+        conductor: {autoScaling: Record<string, unknown>};
+      }
+    ).conductor.autoScaling,
+    legacy.conductor.autoScaling
+  );
   assert.equal(aws.spatialCapacity?.maxCapacity, 4);
   assert.equal(core.attachmentStorage.prefix, 'custom-layers');
   assert.ok(aws.authProviders);
@@ -351,4 +359,26 @@ test('already-migrated {core, aws} input is rejected', async () => {
     () => migrateOldAwsConfig({core: {}, aws: {}}, null),
     /already looks like the new/
   );
+});
+
+test('migrating autoScaling without desiredCapacity does not invent a default', async () => {
+  const {desiredCapacity: _omitted, ...autoScaling} =
+    legacy.conductor.autoScaling;
+  const input = {
+    ...legacy,
+    conductor: {
+      ...legacy.conductor,
+      autoScaling,
+    },
+  };
+
+  const result = await migrateOldAwsConfig(input, fakeFetcher());
+  const migrated = (
+    result.aws as {conductor: {autoScaling: Record<string, unknown>}}
+  ).conductor.autoScaling;
+  assert.equal('desiredCapacity' in migrated, false);
+  assert.equal(migrated.desiredCapacity, undefined);
+  assert.equal(migrated.minCapacity, 1);
+  assert.equal(migrated.maxCapacity, 3);
+  assert.equal(migrated.targetCpuUtilization, 60);
 });

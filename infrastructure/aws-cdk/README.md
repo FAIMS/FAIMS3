@@ -385,8 +385,8 @@ The **`aws`** fields are documented below.
   - `ephemeralStorageGiB`: (default `21`, range 21–200) Fargate ephemeral disk for the API task. Map-layer GDAL scratch is on the spatial worker (`spatialCapacity.ephemeralStorageGiB`, default 80), not here.
   - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
   - `autoScaling`: Auto scaling configuration for the Conductor service
-    - `desiredCapacity`: The desired number of tasks to run
-    - `minCapacity`: The minimum number of tasks to run
+    - `desiredCapacity`: (Optional) Fixed ECS `DesiredCount`, applied only when set. Setting it resets the live task count on every service update, fighting the autoscaler. Omit it so CloudFormation keeps the current count; `minCapacity` is the floor.
+    - `minCapacity`: The minimum number of tasks to run (the autoscaler floor)
     - `maxCapacity`: The maximum number of tasks that can be run
     - `targetCpuUtilization`: The target CPU utilization percentage for scaling
     - `targetMemoryUtilization`: The target memory utilization percentage for scaling

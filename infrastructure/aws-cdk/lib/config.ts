@@ -146,22 +146,40 @@ export const ConductorConfigSchema = z
      */
     ephemeralStorageGiB: z.number().int().min(21).max(200).default(21),
     /** Auto scaling configuration for the Conductor service */
-    autoScaling: z.object({
-      /** The desired number of tasks to run (general stable target) */
-      desiredCapacity: z.number().int().positive(),
-      /** The minimum number of tasks to run */
-      minCapacity: z.number().int().positive(),
-      /** The maximum number of tasks that can be run */
-      maxCapacity: z.number().int().positive(),
-      /** The target CPU utilization percentage for scaling */
-      targetCpuUtilization: z.number().min(0).max(100),
-      /** The target memory utilization percentage for scaling */
-      targetMemoryUtilization: z.number().min(0).max(100),
-      /** The cooldown period (in seconds) before allowing another scale in action */
-      scaleInCooldown: z.number().int().nonnegative(),
-      /** The cooldown period (in seconds) before allowing another scale out action */
-      scaleOutCooldown: z.number().int().nonnegative(),
-    }),
+    autoScaling: z
+      .object({
+        /**
+         * Optional fixed ECS DesiredCount. Only applied when set. Setting it
+         * resets the live ECS count on every service update (the autoscaler
+         * writes the live count outside CloudFormation). Omit this field so
+         * CDK leaves DesiredCount off the service; `minCapacity` is the
+         * floor.
+         */
+        desiredCapacity: z.number().int().positive().optional(),
+        /** The minimum number of tasks to run (autoscaler floor) */
+        minCapacity: z.number().int().positive(),
+        /** The maximum number of tasks that can be run */
+        maxCapacity: z.number().int().positive(),
+        /** The target CPU utilization percentage for scaling */
+        targetCpuUtilization: z.number().min(0).max(100),
+        /** The target memory utilization percentage for scaling */
+        targetMemoryUtilization: z.number().min(0).max(100),
+        /** The cooldown period (in seconds) before allowing another scale in action */
+        scaleInCooldown: z.number().int().nonnegative(),
+        /** The cooldown period (in seconds) before allowing another scale out action */
+        scaleOutCooldown: z.number().int().nonnegative(),
+      })
+      .refine(
+        data =>
+          data.desiredCapacity === undefined ||
+          (data.minCapacity <= data.desiredCapacity &&
+            data.desiredCapacity <= data.maxCapacity),
+        {
+          message:
+            'desiredCapacity must be between minCapacity and maxCapacity when set',
+          path: ['desiredCapacity'],
+        }
+      ),
     /** Allow localhost typical addresses in the redirects for conductor? NOT
      * recommended for production use cases (for security reasons). */
     localhostWhitelist: z.boolean().default(false),
