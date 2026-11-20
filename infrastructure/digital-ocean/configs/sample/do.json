@@ -1,0 +1,20 @@
+{
+  "region": "syd1",
+  "couch": {
+    "dropletSize": "s-2vcpu-4gb-intel",
+    "volumeSize": 400,
+    "instanceCount": 1
+  },
+  "conductor": {
+    "imageTag": "v1.2.3",
+    "instanceSize": "basic-m"
+  },
+  "storage": {
+    "bucket": "fieldmark-map-assets",
+    "endpoint": "https://syd1.digitaloceanspaces.com"
+  },
+  "backup": {
+    "bucket": "fieldmark-example-backups",
+    "endpoint": "https://syd1.digitaloceanspaces.com"
+  }
+}

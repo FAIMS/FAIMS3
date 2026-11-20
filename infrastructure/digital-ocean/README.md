@@ -1,26 +1,55 @@
 # Deploy Fieldmark to Digital Ocean via Terraform
 
-This folder contains two Terraform modules to configure and deploy both CouchDB
-and the Conductor server to Digital Ocean. It also contains an example deployment
-project that can be used as a template for an individual deployment.
+This directory contains the DigitalOcean deployment modules and the staging ground for the repo's modernised deployment model.
 
-## CouchDB
+## Current state
 
-The CouchDB module creates a cluster of droplets running the CouchDB docker image, each
-with an attached volume for persistent storage. A load balancer is configured as a front
-end to the cluster and an SSL certificate is created to allow HTTPS access.
+The DigitalOcean path is in transition from the older, manual deployment pattern to the same configuration-driven deployment architecture used elsewhere in the repo.
 
-TODO: currently only a single node is tested, more nodes can be created but the configuration
-doesn't set up CouchDB clustering so they would be independent nodes.
+The older example under `infrastructure/digital-ocean/example/` is useful as a historical reference, but it reflects the manual `.env` + committed-state pattern we want to replace.
 
-## Conductor
+## Configuration model
 
-Conductor is deployed on a single droplet configured to use HTTPS and connect to the CouchDB
-cluster.
+The DO deployment should follow the same pattern as the AWS deployment flow:
 
-## Example Deployment
+- `core.json` for shared non-secret runtime config
+- `do.json` for DigitalOcean-specific deployment settings
+- optional encrypted `secrets.enc.json` overlays via SOPS
+- `do-secrets.enc.json` for DigitalOcean-only backup credentials
+- local mirror under `config/<environment>/`
+- sync via `scripts/sync-deployment-config.sh`
 
-The `example` folder contains a Terraform configuration that uses the two modules
-above to deploy a full FAIMS3 server configuration. To manage a deployment, create
-a private repository and copy the `example` folder to it. Further instructions
-are in the README.md file in the `example` folder.
+`core.json` is the sole source of truth for the deployment domain:
+`domains.base` and `domains.services` are shared with the mobile and web
+applications. DigitalOcean infrastructure must derive its hostnames from that
+contract rather than duplicating a base domain in `do.json`.
+
+The deployment root constructs the full API, app, web, CouchDB, and docs
+domains from those shared settings and passes them explicitly into each module.
+Modules retain `deployment_domain` for resource naming and DNS zone selection,
+but must not synthesize service hostnames from provider-specific defaults.
+
+A sample config layout is provided under `infrastructure/digital-ocean/configs/sample/`.
+
+`do.json` has a strict, DigitalOcean-local schema in `validateConfig.ts`. It
+currently covers only the fields consumed by the Terraform deployment and
+rejects unknown fields so new settings must be added deliberately as modules
+adopt them.
+
+Validate an environment directory with:
+
+```bash
+pnpm --filter=@faims3/infra-digital-ocean validate-config \
+  --config-dir "$PWD/infrastructure/digital-ocean/configs/sample"
+```
+
+## Planned migration
+
+Phase 1 work is to establish the config structure and compatibility model before reworking the Terraform root deployment itself.
+
+The next steps are:
+
+1. standardise the config layout and naming
+2. replace ad hoc `.env`-driven values with config-backed inputs
+3. add the map-layer / spatial-processing and backup / ttl-cleanup hooks to the platform config
+4. convert the example deployment into a coherent runtime root using the new config model

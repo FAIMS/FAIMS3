@@ -1,2 +1,5 @@
-do_token = <your-do-token>
-contact_email = <your-email>
+config_dir = "/absolute/path/to/config/environment"
+do_token   = "<your-do-token>"
+
+# App/API secrets are decrypted from secrets.enc.json at deploy time.
+registry_credentials = "<registry-user:token>"
