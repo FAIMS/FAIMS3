@@ -8,9 +8,9 @@
  *   server-side evaluation share one implementation.
  */
 
-import {DataEngine} from '../databaseEngine/engine';
 import {getRelatedRecordFields, ValuesObject} from '../uiSpecification';
 import {logWarn} from '../logging';
+import {DerivedReadEngine} from './recordContext';
 
 /** A single stored link, as written by the Related Records field. */
 type LinkEntry = {record_id?: string};
@@ -47,10 +47,13 @@ export const resolveRelatedValues = async ({
   engine,
   values,
   formId,
+  derivedDepth,
 }: {
-  engine: DataEngine;
+  engine: DerivedReadEngine;
   values: ValuesObject;
   formId: string;
+  /** Passed to linked-record reads; see getExistingFormData. */
+  derivedDepth?: number;
 }): Promise<Record<string, ValuesObject>> => {
   const resolved: Record<string, ValuesObject> = {};
   const relatedFields = getRelatedRecordFields({
@@ -65,6 +68,7 @@ export const resolveRelatedValues = async ({
     try {
       const record = await engine.form.getExistingFormData({
         recordId: link.record_id,
+        derivedDepth,
       });
       if (record.formId !== info.relatedFormId) continue;
       // Unwrap {data: ...} entries to raw values.

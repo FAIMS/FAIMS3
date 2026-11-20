@@ -13,6 +13,10 @@ import {
   UiSpecModel,
   UiSpecForms,
   RecordMetadata,
+  applyComputedValues,
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -1044,13 +1048,25 @@ const useRowHydration = (
               }),
             ],
             queryFn: async () => {
-              return await fetchAndHydrateRecord({
+              const record = await fetchAndHydrateRecord({
                 dataDb,
                 uiSpecification: uiSpec,
                 projectId,
                 recordId: row.recordId,
                 revisionId: undefined,
               });
+              // Computed values follow their current inputs, not the last save
+              return (
+                record &&
+                applyComputedValues({
+                  engine: new DataEngine({
+                    dataDb:
+                      dataDb as unknown as DatabaseInterface<DataDocument>,
+                    uiSpec,
+                  }),
+                  record,
+                })
+              );
             },
             select: withSummaryValues,
             networkMode: 'always' as const,

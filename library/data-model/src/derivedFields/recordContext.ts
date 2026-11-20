@@ -8,6 +8,7 @@
  *   the app and server-side evaluation share one implementation.
  */
 
+import type {DataEngine} from '../databaseEngine/engine';
 import {HydratedRecordDocument} from '../databaseEngine/types';
 import {
   CREATED_TIME_ID,
@@ -16,6 +17,12 @@ import {
 } from '../uiSpecification';
 import {logWarn} from '../logging';
 import {formatTimestamp} from '../utils';
+
+/** The engine surface derived-value resolution reads through. */
+export type DerivedReadEngine = Pick<
+  DataEngine,
+  'uiSpec' | 'core' | 'hydrated' | 'form'
+>;
 
 export interface RecordContext {
   // timestamp ms created
