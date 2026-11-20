@@ -98,14 +98,15 @@ parent fields by Field Heading.
 
 Parent references are type checked like any other reference, and —
 unlike same-form references — may point at the parent's computed fields
-and Templated Strings, whose stored values are used.
+and Templated Strings. A referenced computed field gives its current
+value; a referenced Templated String gives its stored value.
 
 If a record has no parent, a parent reference has no value and the
 result stays blank, matching the behaviour for missing same-form
-values. The computed value is stored on save and re-derives whenever
-the record is next opened or saved; if the parent changes in the
-meantime, the stored value reflects the parent as of the record's last
-save.
+values. The computed value is worked out from the parent's current
+values when the record is viewed and in CSV and spatial exports, so a
+change to the parent shows without reopening the record. The value is
+also stored on save.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
@@ -123,17 +124,17 @@ record's cutter mass. An **Insert linked record field** picker below
 the expression lists the available fields.
 
 Linked record references are type checked against the linked form, and
-may point at the linked record's computed fields and Templated Strings,
-whose stored values are used. Fields that allow multiple links, and
+may point at the linked record's computed fields and Templated Strings.
+A referenced computed field gives its current value; a referenced
+Templated String gives its stored value. Fields that allow multiple links, and
 Child-relation fields, cannot be referenced this way (children
 reference their parent with `_PARENT.`); the editor reports these with
 a specific error.
 
 If nothing is linked, the reference has no value and the result stays
-blank. The value updates while editing whenever the link is changed,
-and otherwise re-derives when the record is opened or saved — if the
-linked record changes in the meantime, the stored value reflects it as
-of this record's last save.
+blank. The value updates while editing whenever the link is changed.
+When the linked record itself changes, the value shows the change the
+next time this record is viewed, without reopening it for editing.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
