@@ -15,7 +15,7 @@ selection, and the stored value can be either the full path
 (e.g., "Ceramics > Coarseware > Cooking pot") or just the leaf node name.
 
 > **Note:** This field is a **beta feature**. The hierarchy structure
-> must be defined via JSON editing — the {{Notebook}} Editor does not yet
+> must be defined via YAML editing — the {{Notebook}} Editor does not yet
 > provide a visual tree editor. Also consider the display
 > size of the field on mobile devices.
 
@@ -51,6 +51,7 @@ desired Helper Text.
 ```{screenshot} field-types-design/hierarchical-select-02-configured.png
 :alt: Select Field (Hierarchical) configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Select Field (Hierarchical)-Specific Settings
@@ -66,8 +67,25 @@ a valid JSON structure with two levels.
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Value type** | Controls what is stored when a selection is made: "full" stores the complete path (e.g., "Ceramics > Coarseware > Cooking pot"), while "child" stores only the selected node name (e.g., "Cooking pot"). |
 
-The **hierarchy tree** (the `optiontree` structure) is not configurable
-in the {{Notebook}} Editor and must be defined via JSON editing.
+The **hierarchy tree** can be edited in the text entry box and must follow
+[YAML format](https://www.yaml.info/learn/index.html). Follow the example
+for the required structure. Each entry must have a `name` attribute
+and can optionally have a `label`. The `name` will be the value stored
+in the field, the label is displayed to the user. You can optionally include
+`children` which must then contain a nested list of entries. Nesting can
+go as deep as you would like. Here is a simple example:
+
+```yaml
+- name: animal
+  label: Animal
+- name: vegetable
+  label: Vegetable
+  children:
+    - name: carrot
+      label: Carrot
+    - name: potato
+    - name: radish
+```
 
 ### Shared Field Options
 

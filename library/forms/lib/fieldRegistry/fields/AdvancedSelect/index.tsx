@@ -16,10 +16,7 @@
  * - disabled: Whether the field is disabled.
  */
 
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TreeItem, {TreeItemProps} from '@mui/lab/TreeItem';
-import TreeView from '@mui/lab/TreeView';
+import {SimpleTreeView, TreeItem, TreeItemProps} from '@mui/x-tree-view';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
@@ -80,17 +77,17 @@ interface CustomTreeItemProps extends TreeItemProps {
 }
 
 const CustomTreeItem = (props: CustomTreeItemProps) => {
-  const {onSelectValue, type, name, label, nodeId, ...treeItemProps} = props;
+  const {onSelectValue, type, name, label, itemId, ...treeItemProps} = props;
 
   return (
     <TreeItem
-      key={nodeId}
+      key={itemId}
       {...treeItemProps}
-      nodeId={nodeId}
+      itemId={itemId}
       label={label ?? name}
       onClick={(event: React.MouseEvent<HTMLLIElement>) => {
         event.stopPropagation();
-        onSelectValue(nodeId, type, name, label as string | undefined);
+        onSelectValue(itemId, type, name, label as string | undefined);
       }}
     />
   );
@@ -179,16 +176,11 @@ export const AdvancedSelect = (props: FieldProps) => {
   const onSelectValue = (
     newValue: string,
     type: string | undefined,
-    name: string,
-    nodeLabel: string | undefined
+    name: string
   ) => {
     if (valuetype === 'child') {
-      // For child mode, store just the name (with label for images)
-      let childValue = name;
-      if (type === 'image' && nodeLabel) {
-        childValue = `${nodeLabel}(${name})`;
-      }
-      setFieldData(childValue);
+      // For child mode, store just the name
+      setFieldData(name);
     } else {
       // For full mode, store the full path (nodeId contains the full path)
       setFieldData(newValue);
@@ -207,21 +199,13 @@ export const AdvancedSelect = (props: FieldProps) => {
     const singleKey = parentKey !== '' ? `${parentKey}.${key}` : `${key}`;
 
     // Build the full path for this node
-    let nodePath: string;
-    if (node.type === 'image' && node.label !== undefined) {
-      nodePath =
-        parentNodePath !== ''
-          ? `${parentNodePath} > ${node.label}(${node.name})`
-          : `${node.label}(${node.name})`;
-    } else {
-      nodePath =
-        parentNodePath !== '' ? `${parentNodePath} > ${node.name}` : node.name;
-    }
+    let nodePath =
+      parentNodePath !== '' ? `${parentNodePath} > ${node.name}` : node.name;
 
     return (
       <CustomTreeItem
         key={singleKey}
-        nodeId={nodePath}
+        itemId={nodePath}
         name={node.name}
         type={node.type}
         onSelectValue={onSelectValue}
@@ -251,10 +235,8 @@ export const AdvancedSelect = (props: FieldProps) => {
         {/* Tree view for selection (hidden when disabled) */}
         {!disabled && (
           <Box sx={{overflowY: 'auto'}}>
-            <TreeView
+            <SimpleTreeView
               aria-label="hierarchical select"
-              defaultCollapseIcon={<ExpandMoreIcon />}
-              defaultExpandIcon={<ChevronRightIcon />}
               sx={{
                 flexGrow: 1,
                 minWidth: 500,
@@ -266,7 +248,7 @@ export const AdvancedSelect = (props: FieldProps) => {
                 ElementProps.optiontree.map((node, key) =>
                   renderTree(node, key, '', '')
                 )}
-            </TreeView>
+            </SimpleTreeView>
           </Box>
         )}
       </Box>

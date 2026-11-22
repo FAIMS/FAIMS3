@@ -1,44 +1,139 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-
+import {yaml as yamlLanguage} from '@codemirror/lang-yaml';
+import {EditorState} from '@codemirror/state';
+import {EditorView, keymap} from '@codemirror/view';
+import InfoIcon from '@mui/icons-material/Info';
 import {
-  Button,
   Alert,
-  AlertTitle,
-  Grid,
   Card,
   FormControl,
-  FormLabel,
   FormControlLabel,
-  RadioGroup,
+  FormLabel,
+  Grid,
   Radio,
-  Collapse,
+  RadioGroup,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-
+import debounce from 'lodash/debounce';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import YAML from 'yaml';
 import {AdvancedSelectFieldProps} from '@faims3/forms';
-import {BaseFieldEditor} from './BaseFieldEditor';
-import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {fieldUpdated} from '../../store/slices/uiSpec';
-
-import {useState} from 'react';
-import DebouncedTextField from '../debounced-text-field';
+import {BaseFieldEditor} from './BaseFieldEditor';
+import {indentWithTab} from '@codemirror/commands';
+import {designerInfoIconSx} from '../designer-style';
+import React from 'react';
 
 type OptionTreeType = {
   name: string;
-  type?: '' | 'image';
+  type?: string;
   label?: string;
   children?: OptionTreeType[];
 };
 
-type newState = {
-  optionTree: OptionTreeType;
+type NewState = {
+  optionTree: OptionTreeType[];
   valueType: string;
 };
 
-/** Hierarchical option tree editor and value mode (`full` vs stored id) for `AdvancedSelect`. */
+const DEBOUNCE_MS = 500;
+
+/**
+ * Generates a YAML string from the given option tree.
+ *
+ * @param optionTree an option tree structure from the field
+ * @returns the YAML string representation of the option tree
+ */
+const serializeOptionTree = (optionTree: OptionTreeType[] = []) =>
+  YAML.stringify(optionTree, {indent: 2, lineWidth: 0});
+
+/**
+ * Validates the structure of the option tree.
+ *
+ * @param optionTree an option tree structure from the field
+ * @throws Error if the option tree contains invalid properties or types
+ */
+const isTypeMatch = (optionTree: OptionTreeType[]) => {
+  optionTree.forEach((opt: OptionTreeType) => {
+    const validKeys: string[] = ['name', 'type', 'label', 'children'];
+
+    if (!Object.keys(opt).every(key => validKeys.includes(key))) {
+      throw new Error(
+        "Invalid property. Only 'name', 'label' and 'children' properties are accepted."
+      );
+    }
+
+    if (!opt.name) {
+      throw new Error(
+        'Missing property: name. Please refer to the example and try again.'
+      );
+    }
+
+    if (typeof opt.name !== 'string') {
+      throw new Error(
+        "Invalid 'name' property. The 'name' property must be a string. Please refer to the example and try again."
+      );
+    }
+
+    if (opt.label !== undefined && typeof opt.label !== 'string') {
+      throw new Error(
+        `Invalid 'label' property at level ${opt.name}. The 'label' property must be a string. Please refer to the example and try again.`
+      );
+    }
+
+    // children is optional but must be an array if provided
+    if (opt.children && !Array.isArray(opt.children)) {
+      throw new Error(
+        `Invalid 'children' property at level ${opt.name}. The 'children' property must be an array. Please refer to the example and try again.`
+      );
+    }
+
+    if (opt.children) {
+      isTypeMatch(opt.children);
+    }
+  });
+};
+
+/**
+ * Parses a YAML string into an option tree structure.
+ *
+ * @param yamlText the YAML string representing the option tree
+ * @returns the parsed option tree as an array of OptionTreeType
+ * @throws Error if the YAML is invalid or the structure does not match the expected option tree format
+ */
+const parseOptionTreeFromYaml = (yamlText: string): OptionTreeType[] => {
+  let parsed: unknown;
+
+  try {
+    parsed = YAML.parse(yamlText);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`YAML parse error: ${error.message}`);
+    }
+    throw new Error('YAML parse error.');
+  }
+
+  if (parsed == null || parsed === '') {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('Option tree must be a YAML array of entries.');
+  }
+
+  isTypeMatch(parsed);
+  return parsed;
+};
+
+/**
+ * Hierarchical option tree editor for the `AdvancedSelect` field.
+ *
+ * @param fieldName the name of the field being edited
+ */
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook.uiSpec.present.fields[fieldName]
@@ -46,223 +141,247 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const dispatch = useAppDispatch();
 
   const params = field['component-parameters'] as AdvancedSelectFieldProps;
-  const state = {
-    optionTree: params.ElementProps?.optiontree as unknown as OptionTreeType,
-    valueType: params.valuetype || 'full',
-  };
+  const currentOptionTree = Array.isArray(params.ElementProps?.optiontree)
+    ? (params.ElementProps.optiontree as OptionTreeType[])
+    : [];
+  const currentValueType = params.valuetype || 'full';
 
-  const [newOptionTree, setNewOptionTree] = useState(
-    JSON.stringify(state.optionTree, null, 2)
+  const [yamlValue, setYamlValue] = useState(() =>
+    serializeOptionTree(currentOptionTree)
   );
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [open, setOpen] = useState(false);
+  const editorHostRef = useRef<HTMLDivElement | null>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
+  const previousFieldNameRef = useRef(fieldName);
+  const fieldRef = useRef(field);
+  const valueTypeRef = useRef(currentValueType);
 
-  const updateFieldFromState = (newState: newState) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    const newParams = newField[
-      'component-parameters'
-    ] as AdvancedSelectFieldProps;
-    newParams.valuetype = newState.valueType as 'full' | 'child';
+  useEffect(() => {
+    fieldRef.current = field;
+  }, [field]);
 
-    if (newParams.ElementProps) {
-      newParams.ElementProps.optiontree =
-        newState.optionTree as unknown as typeof newParams.ElementProps.optiontree;
-    }
+  useEffect(() => {
+    valueTypeRef.current = currentValueType;
+  }, [currentValueType]);
 
-    dispatch(fieldUpdated({fieldName, newField}));
-  };
+  const updateFieldFromState = useCallback(
+    (newState: NewState) => {
+      const newField = JSON.parse(
+        JSON.stringify(fieldRef.current)
+      ) as FieldType;
+      const newParams = newField[
+        'component-parameters'
+      ] as AdvancedSelectFieldProps;
+      newParams.valuetype = newState.valueType as 'full' | 'child';
 
-  const updateProperty = (prop: string, value: string | OptionTreeType[]) => {
-    const newState = {...state, [prop]: value};
-    updateFieldFromState(newState);
-  };
+      if (newParams.ElementProps) {
+        newParams.ElementProps.optiontree =
+          newState.optionTree as unknown as typeof newParams.ElementProps.optiontree;
+      }
 
-  const isTypeMatch = (o: OptionTreeType[]) => {
-    return o.forEach((opt: OptionTreeType) => {
-      const validKeys: string[] = ['name', 'type', 'label', 'children'];
+      dispatch(fieldUpdated({fieldName, newField}));
+    },
+    [dispatch, fieldName]
+  );
 
-      if (!Object.keys(opt).every(key => validKeys.includes(key))) {
-        throw new Error(
-          "Invalid property. Only 'name', 'type', 'label' and 'children' properties are accepted."
-        );
-      } else if (!opt.name) {
-        throw new Error(
-          'Missing property: name. Please refer to the example and try again.'
-        );
-      } else if (opt.name && typeof opt.name !== 'string') {
-        throw new Error(
-          "Invalid 'name' property. The 'name' property must be a string. Please refer to the example and try again."
-        );
-      } else if (
-        opt.type &&
-        opt.type.trim().length !== 0 &&
-        opt.type !== 'image'
-      ) {
-        throw new Error(
-          `Invalid 'type' property at level ${opt.name}. The 'type' property must be an empty string ("") or "image". Please refer to the example and try again.`
-        );
-      } else if (opt.label && typeof opt.label !== 'string') {
-        throw new Error(
-          `Invalid 'label' property at level ${opt.name}. The 'label' property must be a string. Please refer to the example and try again.`
-        );
-      } else if (!opt.children) {
-        throw new Error(
-          `Missing property: children at level ${opt.name}. Please refer to the example and try again.`
-        );
-      } else if (opt.children) {
-        // run validation check on the properties in children recursively
-        isTypeMatch(opt.children);
-      } else {
-        // all good
+  const updateProperty = useCallback(
+    (prop: 'optionTree' | 'valueType', value: string | OptionTreeType[]) => {
+      const nextState: NewState = {
+        optionTree:
+          prop === 'optionTree'
+            ? (value as OptionTreeType[])
+            : currentOptionTree,
+        valueType: prop === 'valueType' ? (value as string) : currentValueType,
+      };
+
+      updateFieldFromState(nextState);
+    },
+    [currentOptionTree, currentValueType, updateFieldFromState]
+  );
+
+  const saveOptionTree = useCallback(
+    (nextYaml: string) => {
+      try {
+        const optionTree = parseOptionTreeFromYaml(nextYaml);
+        updateFieldFromState({
+          optionTree,
+          valueType: valueTypeRef.current,
+        });
         setErrorMessage('');
-        return;
+        setSuccessMessage('Saved successfully.');
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setErrorMessage(error.message);
+          setSuccessMessage('');
+        }
       }
+    },
+    [updateFieldFromState]
+  );
+
+  const debouncedSave = useMemo(
+    () =>
+      debounce((nextYaml: string) => {
+        saveOptionTree(nextYaml);
+      }, DEBOUNCE_MS),
+    [saveOptionTree]
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSave.cancel();
+      debouncedSave.flush();
+    };
+  }, [debouncedSave]);
+
+  useEffect(() => {
+    if (previousFieldNameRef.current !== fieldName) {
+      previousFieldNameRef.current = fieldName;
+      setYamlValue(serializeOptionTree(currentOptionTree));
+    }
+  }, [fieldName]);
+
+  useEffect(() => {
+    const parent = editorHostRef.current;
+    if (!parent) {
+      return;
+    }
+
+    const view = new EditorView({
+      parent,
+      state: EditorState.create({
+        doc: yamlValue,
+        extensions: [
+          yamlLanguage(),
+          keymap.of([indentWithTab]),
+          EditorView.lineWrapping,
+          EditorView.updateListener.of(update => {
+            if (!update.docChanged) {
+              return;
+            }
+            const nextYamlText = update.state.doc.toString();
+            setYamlValue(nextYamlText);
+            setErrorMessage('');
+            setSuccessMessage('');
+            debouncedSave(nextYamlText);
+          }),
+        ],
+      }),
     });
-  };
 
-  const validateOptionTree = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    editorViewRef.current = view;
 
-    let optionTree: OptionTreeType[];
-    // catch SyntaxErrors
-    try {
-      JSON.parse(newOptionTree);
-    } catch (error: unknown) {
-      error instanceof SyntaxError && setErrorMessage(error.message);
+    return () => {
+      view.destroy();
+      editorViewRef.current = null;
+    };
+  }, [debouncedSave]);
+
+  useEffect(() => {
+    const view = editorViewRef.current;
+    if (!view) {
+      return;
     }
 
-    // catch other errors
-    try {
-      optionTree = JSON.parse(newOptionTree) as OptionTreeType[];
-      isTypeMatch(optionTree);
-      updateProperty('optionTree', optionTree);
-      setErrorMessage('');
-      setSuccessMessage('Saved successfully.');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-        setSuccessMessage('');
-      }
+    const currentDoc = view.state.doc.toString();
+    if (yamlValue !== currentDoc) {
+      view.dispatch({
+        changes: {
+          from: 0,
+          to: currentDoc.length,
+          insert: yamlValue,
+        },
+      });
     }
-  };
+  }, [yamlValue]);
+
+  const sampleOptionTree: OptionTreeType[] = [
+    {
+      name: 'option-1',
+      label: 'Option 1',
+      children: [
+        {
+          name: 'option-1-1',
+          label: 'Option 1.1',
+        },
+      ],
+    },
+    {
+      name: 'option-2',
+    },
+    {
+      name: 'option-3',
+    },
+  ];
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid size={{xs: 12, sm: 9}}>
+      <Grid>
         <Card variant="outlined">
           <Grid size={12} sx={{mx: 1.5, my: 2}}>
+            <Typography variant="body2">
+              Enter a YAML formatted option tree below.
+              <Tooltip
+                title={
+                  <React.Fragment>
+                    <Typography>YAML Example</Typography>
+                    <pre>{serializeOptionTree(sampleOptionTree)}</pre>
+                    <Typography>
+                      <em>name</em> is required for every option. <em>label</em>{' '}
+                      and <em>children</em> are optional.
+                    </Typography>
+                  </React.Fragment>
+                }
+              >
+                <InfoIcon
+                  sx={{
+                    ...designerInfoIconSx,
+                    fontSize: '1.35rem',
+                  }}
+                />
+              </Tooltip>
+            </Typography>
             <Grid
               container
               size={12}
               sx={{flexDirection: 'column', alignItems: 'center'}}
             >
-              <Alert severity="info" sx={{mb: 2}}>
-                <AlertTitle>Example Structure</AlertTitle>
+              <div
+                ref={editorHostRef}
+                style={{
+                  width: '95%',
+                  minHeight: 220,
+                  border: '1px solid rgba(0, 0, 0, 0.12)',
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                }}
+              />
+              {errorMessage && (
+                <Alert severity="error" sx={{mt: 2.5, width: '95%'}}>
+                  {errorMessage}
+                </Alert>
+              )}
 
-                <p>
-                  The following is an example of a valid JSON structure with 2
-                  levels. The first level goes 1 level deep (i.e., stops at
-                  Level 1), the second goes 2 levels deep (i.e., includes Level
-                  2 and Level 2.1). The properties <code>name</code> and{' '}
-                  <code>children</code> must be included, whereas the properties{' '}
-                  <code>type</code> and <code>label</code> are optional.
-                </p>
-
-                <Button
-                  onClick={() => setOpen(!open)}
-                  size="small"
-                  color="info"
-                  endIcon={
-                    open ? (
-                      <ExpandLess fontSize="small" />
-                    ) : (
-                      <ExpandMore fontSize="small" />
-                    )
-                  }
-                >
-                  {open ? 'Close' : 'Show Help'}
-                </Button>
-
-                <Collapse in={open} unmountOnExit>
-                  <pre>
-                    {JSON.stringify(
-                      [
-                        {
-                          name: 'Level 1',
-                          label: 'example',
-                          type: 'image',
-                          children: [],
-                        },
-                        {
-                          name: 'Level 2',
-                          children: [
-                            {
-                              name: 'Level 2.1',
-                              children: [],
-                            },
-                          ],
-                        },
-                      ],
-                      null,
-                      2
-                    )}
-                  </pre>
-                </Collapse>
+              <Alert severity="info" sx={{mt: 2.5, width: '95%'}}>
+                <strong>Note:</strong> this editor captures the Tab key for
+                indentation. To tab to the next field, hit the Escape key first.
               </Alert>
-
-              <form onSubmit={validateOptionTree}>
-                <DebouncedTextField
-                  slotProps={{
-                    input: {sx: {fontFamily: 'monospace', fontSize: 14}},
-                    inputLabel: {sx: {fontSize: 14}},
-                  }}
-                  label="JSON"
-                  helperText="Use this field to type a JSON structure for your optiontree. Click 'Save' or press 'Enter' when done."
-                  value={newOptionTree}
-                  multiline
-                  fullWidth
-                  onChange={e => {
-                    setNewOptionTree(e.target.value);
-                    setSuccessMessage('');
-                    setErrorMessage('');
-                  }}
-                />
-
-                <Button
-                  sx={{mt: 2.5}}
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                >
-                  Save
-                </Button>
-
-                {errorMessage && (
-                  <Alert severity="error" sx={{mt: 2.5}}>
-                    {errorMessage}
-                  </Alert>
-                )}
-
-                {successMessage && (
-                  <Alert severity="success" sx={{mt: 2.5}}>
-                    {successMessage}
-                  </Alert>
-                )}
-              </form>
             </Grid>
           </Grid>
         </Card>
       </Grid>
 
-      <Grid size={{xs: 12, sm: 3}}>
+      <Grid>
         <Card variant="outlined">
           <Grid size={12} sx={{mx: 1.5, my: 2}}>
             <FormControl>
               <FormLabel id="value-type">Value Type</FormLabel>
               <RadioGroup
+                row={true}
                 aria-labelledby="value-type"
-                value={state.valueType}
+                value={currentValueType}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   updateProperty('valueType', e.target.value)
                 }
@@ -279,6 +398,11 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                 />
               </RadioGroup>
             </FormControl>
+            <Typography variant="body2" sx={{mt: 2}}>
+              Select 'Full' to include all labels to the chosen value in the
+              result, eg. 'Level 1&gt;Level 2&gt;Level 2.1'. Select 'Child' to
+              include only the selected name.
+            </Typography>
           </Grid>
         </Card>
       </Grid>
