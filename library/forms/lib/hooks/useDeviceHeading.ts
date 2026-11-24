@@ -89,11 +89,12 @@ let androidSensorAvailabilityPromise: ReturnType<
 /** Check access, start Capgo's shared sensor listener, and return its handle. */
 async function startNativeCompassSession(): Promise<NativeCompassSession | null> {
   if (Capacitor.getPlatform() === 'android') {
-    // Capgo can produce plausible readings without a magnetometer, so check
-    // the actual hardware before treating its output as a compass heading.
-    androidSensorAvailabilityPromise ??= getAndroidCompassSensorAvailability();
-
     try {
+      // Capgo can produce plausible readings without a magnetometer, so check
+      // the actual hardware before treating its output as a compass heading.
+      androidSensorAvailabilityPromise ??=
+        getAndroidCompassSensorAvailability();
+
       const availability = await androidSensorAvailabilityPromise;
       const missingSensors: string[] = [];
       if (!availability.accelerometerAvailable) {
