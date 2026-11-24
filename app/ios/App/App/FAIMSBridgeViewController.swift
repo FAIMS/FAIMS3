@@ -4,5 +4,6 @@ import Capacitor
 class FAIMSBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(MapFileRangePlugin())
+        bridge?.registerPluginInstance(IOSCompassAvailabilityPlugin())
     }
 }

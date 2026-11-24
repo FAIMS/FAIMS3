@@ -35,6 +35,7 @@ import {
   screenOrientationAngle,
 } from '../components/maps/webHeading';
 import {getAndroidCompassSensorAvailability} from '../native/androidCompassSensors';
+import {getIOSCompassAvailability} from '../native/iosCompassAvailability';
 import {logWarn} from '../logging';
 
 // Clear Android compass data after this long without a valid sensor update.
@@ -88,7 +89,9 @@ let androidSensorAvailabilityPromise: ReturnType<
 
 /** Check access, start Capgo's shared sensor listener, and return its handle. */
 async function startNativeCompassSession(): Promise<NativeCompassSession | null> {
-  if (Capacitor.getPlatform() === 'android') {
+  const platform = Capacitor.getPlatform();
+
+  if (platform === 'android') {
     try {
       // Capgo can produce plausible readings without a magnetometer, so check
       // the actual hardware before treating its output as a compass heading.
@@ -114,6 +117,24 @@ async function startNativeCompassSession(): Promise<NativeCompassSession | null>
       // existing Capgo startup path and report the check failure separately.
       logWarn(
         'Failed to check Android compass sensor availability; continuing with Capgo Compass:',
+        error
+      );
+    }
+  }
+
+  if (platform === 'ios') {
+    try {
+      const availability = await getIOSCompassAvailability();
+      if (!availability.headingAvailable) {
+        logWarn(
+          'iOS compass unavailable; device heading is not supported. Using GPS course-over-ground.'
+        );
+        return null;
+      }
+    } catch (error) {
+      // A failed check does not confirm missing heading hardware.
+      logWarn(
+        'Failed to check iOS compass availability; continuing with Capgo Compass:',
         error
       );
     }

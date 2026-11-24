@@ -25,6 +25,7 @@
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		A1B2C3D4E5F60718293A4B02 /* MapFileRangePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B01 /* MapFileRangePlugin.swift */; };
 		A1B2C3D4E5F60718293A4B04 /* FAIMSBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B03 /* FAIMSBridgeViewController.swift */; };
+		B238A46D0C7E91F352AB6410 /* IOSCompassAvailabilityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B238A46D0C7E91F352AB640F /* IOSCompassAvailabilityPlugin.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -50,6 +51,7 @@
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B01 /* MapFileRangePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapFileRangePlugin.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B03 /* FAIMSBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAIMSBridgeViewController.swift; sourceTree = "<group>"; };
+		B238A46D0C7E91F352AB640F /* IOSCompassAvailabilityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSCompassAvailabilityPlugin.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				A1B2C3D4E5F60718293A4B03 /* FAIMSBridgeViewController.swift */,
 				A1B2C3D4E5F60718293A4B01 /* MapFileRangePlugin.swift */,
+				B238A46D0C7E91F352AB640F /* IOSCompassAvailabilityPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -251,6 +254,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A1B2C3D4E5F60718293A4B02 /* MapFileRangePlugin.swift in Sources */,
 				A1B2C3D4E5F60718293A4B04 /* FAIMSBridgeViewController.swift in Sources */,
+				B238A46D0C7E91F352AB6410 /* IOSCompassAvailabilityPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

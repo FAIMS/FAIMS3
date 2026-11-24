@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   checkPermissions: vi.fn(),
   requestPermissions: vi.fn(),
   getAndroidCompassSensorAvailability: vi.fn(),
+  getIOSCompassAvailability: vi.fn(),
   logWarn: vi.fn(),
 }));
 
@@ -41,6 +42,10 @@ vi.mock('../logging', () => ({
 vi.mock('../native/androidCompassSensors', () => ({
   getAndroidCompassSensorAvailability:
     mocks.getAndroidCompassSensorAvailability,
+}));
+
+vi.mock('../native/iosCompassAvailability', () => ({
+  getIOSCompassAvailability: mocks.getIOSCompassAvailability,
 }));
 
 import {displayHeadingDegrees} from '../components/maps/heading';
@@ -92,6 +97,8 @@ describe('useDeviceHeading', () => {
       accelerometerAvailable: true,
       magneticFieldAvailable: true,
     });
+    mocks.getIOSCompassAvailability.mockReset();
+    mocks.getIOSCompassAvailability.mockResolvedValue({headingAvailable: true});
     mocks.logWarn.mockReset();
   });
 
@@ -203,7 +210,7 @@ describe('useDeviceHeading', () => {
     );
   });
 
-  it('does not check Android sensors on iOS', async () => {
+  it('checks iOS compass availability and starts Capgo when supported', async () => {
     mocks.getPlatform.mockReturnValue('ios');
     mockGrantedNativeListener();
 
@@ -211,7 +218,43 @@ describe('useDeviceHeading', () => {
     await flushNativeStart();
 
     expect(mocks.getAndroidCompassSensorAvailability).not.toHaveBeenCalled();
+    expect(mocks.getIOSCompassAvailability).toHaveBeenCalledTimes(1);
     expect(mocks.startListening).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips Capgo when iOS reports heading unavailable', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    mocks.getIOSCompassAvailability.mockResolvedValue({
+      headingAvailable: false,
+    });
+
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.checkPermissions).not.toHaveBeenCalled();
+    expect(mocks.addListener).not.toHaveBeenCalled();
+    expect(mocks.startListening).not.toHaveBeenCalled();
+    expect(result.current.headingDeg).toBeNull();
+    expect(result.current.source).toBeNull();
+    expect(mocks.logWarn).toHaveBeenCalledWith(
+      'iOS compass unavailable; device heading is not supported. Using GPS course-over-ground.'
+    );
+  });
+
+  it('continues with Capgo if the iOS availability check fails', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    mockGrantedNativeListener();
+    const checkError = new Error('native bridge unavailable');
+    mocks.getIOSCompassAvailability.mockRejectedValue(checkError);
+
+    renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
+    expect(mocks.logWarn).toHaveBeenCalledWith(
+      'Failed to check iOS compass availability; continuing with Capgo Compass:',
+      checkError
+    );
   });
 
   it('prompts for native permission when the plugin reports prompt', async () => {
