@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: {getPlatform: () => mocks.getPlatform()},
+  registerPlugin: vi.fn(() => ({getAvailability: vi.fn()})),
 }));
 
 vi.mock('@capgo/capacitor-compass', () => ({

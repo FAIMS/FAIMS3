@@ -41,6 +41,7 @@ vi.mock('@capacitor/camera', () => ({
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: {getPlatform: () => 'web'},
+  registerPlugin: vi.fn(() => ({getAvailability: vi.fn()})),
 }));
 
 vi.mock('@capacitor/geolocation', () => ({
