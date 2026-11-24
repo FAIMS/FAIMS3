@@ -39,6 +39,8 @@ import {logWarn} from '../logging';
 
 // Clear Android compass data after this long without a valid sensor update.
 export const ANDROID_HEADING_STALE_AFTER_MS = 1500;
+// Minimum heading change (in degrees) required to publish an update.
+const HEADING_UPDATE_THRESHOLD_DEG = 0.05;
 
 /** Live compass reading consumed by the map heading triangle. */
 export interface DeviceHeading {
@@ -78,6 +80,8 @@ interface NativeCompassSession {
  */
 const nativeHeadingListeners = new Set<NativeHeadingListener>();
 let nativeStartPromise: Promise<NativeCompassSession | null> | null = null;
+// Capgo start/stop is global: a new session must wait for the previous stop.
+let nativeStopPromise: Promise<void> | null = null;
 let androidSensorAvailabilityPromise: ReturnType<
   typeof getAndroidCompassSensorAvailability
 > | null = null;
@@ -128,9 +132,11 @@ async function startNativeCompassSession(): Promise<NativeCompassSession | null>
     throw new Error('Compass permission denied');
   }
 
+  // Disable this session's callback even if native listener removal fails.
+  let active = true;
   // Forward only usable bearings to the maps sharing this native session.
   const handle = await CapgoCompass.addListener('headingChange', event => {
-    if (!isFiniteHeading(event.value)) {
+    if (!active || nativeStopPromise || !isFiniteHeading(event.value)) {
       return;
     }
     for (const listener of nativeHeadingListeners) {
@@ -141,10 +147,16 @@ async function startNativeCompassSession(): Promise<NativeCompassSession | null>
     // Remove the event listener if the sensor session fails to start.
     await CapgoCompass.startListening();
   } catch (error) {
+    active = false;
     await handle.remove();
     throw error;
   }
-  return handle;
+  return {
+    remove: async () => {
+      active = false;
+      await handle.remove();
+    },
+  };
 }
 
 /** Add a map to the shared sensor session and return a function to release it. */
@@ -153,7 +165,9 @@ async function subscribeNativeHeading(
 ): Promise<() => Promise<void>> {
   nativeHeadingListeners.add(listener);
   if (!nativeStartPromise) {
-    nativeStartPromise = startNativeCompassSession();
+    nativeStartPromise = nativeStopPromise
+      ? nativeStopPromise.then(startNativeCompassSession)
+      : startNativeCompassSession();
   }
 
   /** Remove this map and stop the sensors when it was the last subscriber. */
@@ -172,21 +186,38 @@ async function subscribeNativeHeading(
       return;
     }
 
-    let handle: NativeCompassSession | null;
+    // Publish the shutdown promise before yielding so new subscribers wait
+    // until the previous native session has finished stopping.
+    const stopping = (async () => {
+      let handle: NativeCompassSession | null;
+      try {
+        handle = await pending;
+      } catch {
+        // Session never started; nothing to stop.
+        return;
+      }
 
-    try {
-      handle = await pending;
-    } catch {
-      // Session never started; nothing to stop.
-      return;
+      if (!handle) {
+        return;
+      }
+
+      try {
+        await handle.remove();
+      } finally {
+        // Still attempt to stop the sensors if listener removal fails.
+        await CapgoCompass.stopListening();
+      }
+    })();
+
+    // A failed shutdown should not permanently prevent future startup.
+    const settled = stopping.catch(error => {
+      logWarn('Failed to stop native compass:', error);
+    });
+    nativeStopPromise = settled;
+    await settled;
+    if (nativeStopPromise === settled) {
+      nativeStopPromise = null;
     }
-
-    if (!handle) {
-      return;
-    }
-
-    await handle.remove();
-    await CapgoCompass.stopListening();
   };
 
   try {
@@ -203,6 +234,7 @@ async function subscribeNativeHeading(
 export function resetNativeCompassForTests(): void {
   nativeHeadingListeners.clear();
   nativeStartPromise = null;
+  nativeStopPromise = null;
   androidSensorAvailabilityPromise = null;
 }
 
@@ -218,6 +250,7 @@ export function useDeviceHeading(
   const smoothingStateRef = useRef<HeadingSmoothingState>(
     createHeadingSmoothingState()
   );
+  const lastPublishedHeadingRef = useRef<number | null>(null);
   const onHeadingChangeRef = useRef(onHeadingChange);
   onHeadingChangeRef.current = onHeadingChange;
   const ignoreInitialAndroidSampleRef = useRef(platform === 'android');
@@ -234,6 +267,7 @@ export function useDeviceHeading(
   /** Send heading updates through the callback or the hook's React state. */
   const publishHeading = useCallback(
     (nextHeading: number | null) => {
+      lastPublishedHeadingRef.current = nextHeading;
       const update: DeviceHeadingUpdate = {
         headingDeg: nextHeading,
         source: nextHeading == null ? null : 'compass',
@@ -286,13 +320,13 @@ export function useDeviceHeading(
       // Use elapsed monotonic time so uneven sensor intervals smooth consistently.
       const after = smoothHeadingSample(before, heading, performance.now());
       smoothingStateRef.current = after;
-      // Ignore negligible changes to avoid unnecessary map updates.
+      // Compare with the last published heading so small changes accumulate.
+      const lastPublished = lastPublishedHeadingRef.current;
       if (
         after.headingDeg != null &&
-        (before.headingDeg == null ||
-          Math.abs(
-            ((after.headingDeg - before.headingDeg + 540) % 360) - 180
-          ) >= 0.05)
+        (lastPublished == null ||
+          Math.abs(((after.headingDeg - lastPublished + 540) % 360) - 180) >=
+            HEADING_UPDATE_THRESHOLD_DEG)
       ) {
         publishHeading(after.headingDeg);
       }
@@ -375,7 +409,9 @@ export function useDeviceHeading(
     const startNative = async () => {
       try {
         const subscribe = subscribeNativeHeading(heading => {
-          receiveHeading(heading);
+          if (!cancelled) {
+            receiveHeading(heading);
+          }
         });
         // Assigned before awaiting start so unmount during startListening
         // still releases (and stops sensors if this was the last map).

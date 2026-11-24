@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/*
 /**
  * MapComponent.tsx
  * This component renders an interactive OpenLayers map with support for:
@@ -87,11 +86,8 @@ import {createTileStore} from './tileDB/TileStore';
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
-
 const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
-// Ignore unreliable GPS course at very low speeds.
-// Retain the last accepted heading while moving slowly or stationary.
-// m/s
+// Minimum speed (m/s) required to use GPS course as a heading fallback.
 const GPS_HEADING_MIN_SPEED_MPS = 0.5;
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
@@ -366,6 +362,10 @@ const MapComponentImpl = (props: MapComponentProps) => {
         minimumUpdateInterval: 1000,
       },
       (position, err) => {
+        if (!mapMountedRef.current) {
+          return;
+        }
+
         if (err) {
           logWarn('Geolocation error:', err.message || err);
           setLocationAvailable(false);
@@ -382,9 +382,21 @@ const MapComponentImpl = (props: MapComponentProps) => {
           setLocationAvailable(true);
         }
       }
-    ).then(id => {
-      watchIdRef.current = id;
-    });
+    )
+      .then(id => {
+        if (!mapMountedRef.current) {
+          void Geolocation.clearWatch({id}).catch(error =>
+            logWarn('Failed to clear GPS watch on unmount:', error)
+          );
+          return;
+        }
+
+        watchIdRef.current = id;
+      })
+      .catch(error => {
+        logWarn('Failed to start GPS watch:', error);
+      });
+
     return theMap;
   }, []);
 
@@ -561,6 +573,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
       })
     );
     const triangleFeature = new Feature(new Point([0, 0]));
+    // An empty style array hides the feature without using the layer's default style.
+    triangleFeature.setStyle([]);
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
 
@@ -569,7 +583,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     let lastMapCoords: [number, number] | null = null;
     let magneticDeclinationDeg: number | undefined;
     let headingRadians = 0;
-    let lastReliableGpsHeading: number | null = null;
+    let reliableGpsHeading: number | null = null;
     let displayedHeadingDeg: number | null = null;
 
     const triangleImage = new RegularShape({
@@ -604,16 +618,21 @@ const MapComponentImpl = (props: MapComponentProps) => {
       const coords = lastMapCoords;
       const headingDeg = displayHeadingDegrees({
         compass: compassHeadingRef.current,
-        gps: lastReliableGpsHeading,
+        gps: reliableGpsHeading,
         compassReference: compassReferenceRef.current,
         latitude: liveLocationRef.current?.coords.latitude,
         longitude: liveLocationRef.current?.coords.longitude,
         magneticDeclinationDeg,
       });
 
-      // Wait for a GPS position and the first valid heading.
-      // If heading becomes unavailable later, retain the last displayed direction
+      // Hide the triangle when neither compass nor GPS provides a usable bearing.
       if (!coords || headingDeg == null) {
+        if (displayedHeadingDeg !== null) {
+          triangleFeature.setStyle([]);
+          // Resetting to null also ensures the triangle reappears when a valid heading
+          // becomes available, even if it is the same bearing as before.
+          displayedHeadingDeg = null;
+        }
         return;
       }
 
@@ -658,8 +677,10 @@ const MapComponentImpl = (props: MapComponentProps) => {
         speed >= GPS_HEADING_MIN_SPEED_MPS &&
         isFiniteHeading(heading)
       ) {
-        // Keep the last course while stationary; GPS direction is noisy at low speed.
-        lastReliableGpsHeading = heading;
+        reliableGpsHeading = heading;
+      } else {
+        // Do not present an old course as the current direction while stationary.
+        reliableGpsHeading = null;
       }
 
       // Reuse the existing marker styles; compass updates only change the

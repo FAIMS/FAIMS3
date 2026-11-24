@@ -6,7 +6,7 @@
  *   Mocks are vi.hoisted so the vi.mock factories can close over them.
  */
 
-import {act, renderHook, waitFor} from '@testing-library/react';
+import {act, cleanup, renderHook, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -96,7 +96,9 @@ describe('useDeviceHeading', () => {
     mocks.logWarn.mockReset();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    cleanup();
+    await flushNativeStart();
     window.DeviceOrientationEvent = originalDeviceOrientationEvent;
     resetNativeCompassForTests();
     vi.useRealTimers();
@@ -419,6 +421,15 @@ describe('useDeviceHeading', () => {
     });
     expect(result.current.headingDeg).toBeNull();
     expect(result.current.reference).toBeNull();
+
+    act(() => {
+      listener.current?.({value: 90}); // Warm-up after expiry
+    });
+    expect(result.current.headingDeg).toBeNull();
+    act(() => {
+      listener.current?.({value: 90});
+    });
+    expect(result.current.headingDeg).toBe(90);
   });
 
   it('stops the native session if the map unmounts while startListening is pending', async () => {
@@ -431,6 +442,8 @@ describe('useDeviceHeading', () => {
     mocks.startListening.mockReturnValue(startPending);
 
     const {unmount} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
     unmount();
 
     await act(async () => {
@@ -471,6 +484,98 @@ describe('useDeviceHeading', () => {
     await waitFor(() => {
       expect(mocks.stopListening).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('waits for the previous native session to stop before starting another', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    mockGrantedNativeListener();
+    let resolveStop!: () => void;
+    mocks.stopListening.mockReturnValueOnce(
+      new Promise<void>(resolve => {
+        resolveStop = resolve;
+      })
+    );
+
+    const first = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+    first.unmount();
+    await flushNativeStart();
+    expect(mocks.stopListening).toHaveBeenCalledTimes(1);
+
+    const second = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
+
+    resolveStop();
+    await flushNativeStart();
+    expect(mocks.startListening).toHaveBeenCalledTimes(2);
+    second.unmount();
+    await flushNativeStart();
+    expect(mocks.stopListening).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores native sensor events after unmount during pending startup', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    const {listener} = mockGrantedNativeListener();
+    let resolveStart!: () => void;
+    mocks.startListening.mockReturnValueOnce(
+      new Promise<void>(resolve => {
+        resolveStart = resolve;
+      })
+    );
+    const onHeadingChange = vi.fn();
+    const {unmount} = renderHook(() => useDeviceHeading(onHeadingChange));
+    await flushNativeStart();
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
+    unmount();
+    act(() => {
+      listener.current?.({value: 45});
+      listener.current?.({value: 46});
+    });
+    expect(onHeadingChange).not.toHaveBeenCalled();
+    resolveStart();
+    await flushNativeStart();
+    expect(mocks.stopListening).toHaveBeenCalledTimes(1);
+  });
+
+  it('publishes accumulated small heading changes', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    const {listener} = mockGrantedNativeListener();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const onHeadingChange = vi.fn();
+    renderHook(() => useDeviceHeading(onHeadingChange));
+    await flushNativeStart();
+
+    act(() => listener.current?.({value: 90}));
+    expect(onHeadingChange).toHaveBeenCalledTimes(1);
+    now += 1000;
+    act(() => listener.current?.({value: 90.03}));
+    expect(onHeadingChange).toHaveBeenCalledTimes(1);
+    for (let i = 2; i <= 5; i += 1) {
+      now += 1000;
+      act(() => listener.current?.({value: 90 + i * 0.03}));
+    }
+    expect(onHeadingChange.mock.calls.length).toBeGreaterThan(1);
+    expect(onHeadingChange.mock.calls.at(-1)?.[0].headingDeg).toBeGreaterThan(
+      90.05
+    );
+  });
+
+  it('stops native sensors even if removing the listener fails', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    const {remove} = mockGrantedNativeListener();
+    const error = new Error('remove failed');
+    remove.mockRejectedValueOnce(error);
+    const {unmount} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+    unmount();
+    await flushNativeStart();
+    expect(mocks.stopListening).toHaveBeenCalledTimes(1);
+    expect(mocks.logWarn).toHaveBeenCalledWith(
+      'Failed to stop native compass:',
+      error
+    );
   });
 
   it('ignores web orientation without an absolute compass reading', () => {
