@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import {registerPlugin} from '@capacitor/core';
 
 /** Availability of the hardware sensors used by Android compass readings. */
