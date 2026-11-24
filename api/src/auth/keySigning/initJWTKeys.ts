@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import {config, keyService} from '../../buildconfig';
+import {jwtCouchKeyName} from '../../couchdb/startupMigrationFingerprint';
 
 export async function initialiseJWTKey(): Promise<void> {
   // don't try to do this if we're testing
@@ -18,7 +19,7 @@ export async function initialiseJWTKey(): Promise<void> {
     const couchdbConfigUrl = `${config.couchdbInternalUrl}/_node/_local/_config/jwt_keys/`;
 
     // rsa:kid format
-    const keyName = `rsa:${signingKey.kid}`;
+    const keyName = jwtCouchKeyName(signingKey.kid);
 
     // basic auth header (fetch has no equivalent of axios' auth option)
     const {username, password} = config.localCouchdbAuth;

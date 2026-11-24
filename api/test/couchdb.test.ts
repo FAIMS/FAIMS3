@@ -16,6 +16,9 @@ import {
   addProjectRole,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DatabaseType,
+  DB_SETUP_DOC_KIND,
+  DB_SETUP_VERSIONS,
+  dbSetupDocId,
   DB_TARGET_VERSIONS,
   FieldDefinition,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -467,6 +470,19 @@ describe('notebook api', () => {
       DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
     );
     expect(migrationDoc.status).toBe('healthy');
+
+    const setup = (await getMigrationDb().get(
+      dbSetupDocId('DATA', dbName)
+    )) as {
+      kind?: string;
+      dbType?: string;
+      dbName?: string;
+      design?: {version: number};
+    };
+    expect(setup.kind).toBe(DB_SETUP_DOC_KIND);
+    expect(setup.dbType).toBe(DatabaseType.DATA);
+    expect(setup.dbName).toBe(dbName);
+    expect(setup.design?.version).toBe(DB_SETUP_VERSIONS.DATA.design);
   });
 
   it('removes the migration document when a survey is deleted', async () => {
@@ -494,6 +510,9 @@ describe('notebook api', () => {
       }
     );
     expect(migrationDocs.rows).toHaveLength(0);
+    await expect(
+      getMigrationDb().get(dbSetupDocId('DATA', dbName))
+    ).rejects.toMatchObject({status: 404});
   });
 
   describe('startup init with more projects than the concurrency limit', () => {
@@ -540,10 +559,31 @@ describe('notebook api', () => {
     it('initialiseDbAndKeys re-initialises every project data DB', async () => {
       const projectIds = await createProjects();
       await removePermissionsDesignDocs(projectIds);
+      for (const projectId of projectIds) {
+        const project = await getProjectById(projectId);
+        const dbName = project.dataDb?.db_name ?? `data-${projectId}`;
+        const setupId = dbSetupDocId('DATA', dbName);
+        const setup = await getMigrationDb().get(setupId);
+        await getMigrationDb().remove(setup);
+      }
 
       await initialiseDbAndKeys({force: true});
 
       await expectPermissionsDesignDocs(projectIds);
+    });
+
+    it('does not restore deleted design docs while the setup record is current', async () => {
+      const projectIds = await createProjects();
+      await removePermissionsDesignDocs(projectIds);
+
+      await initialiseDbAndKeys({force: true});
+
+      for (const projectId of projectIds) {
+        const dataDb = await getDataDb(projectId);
+        await expect(dataDb.get(PERMISSIONS_DESIGN_DOC)).rejects.toMatchObject({
+          status: 404,
+        });
+      }
     });
 
     it('initialiseDbAndKeys does not rewrite design docs that already match', async () => {

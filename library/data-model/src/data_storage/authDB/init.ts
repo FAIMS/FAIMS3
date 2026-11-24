@@ -6,6 +6,10 @@ import {AuthDatabaseSecurityDocument} from './security';
 // currently no config for the auth DB
 export type AuthDbInitialisationConfig = {};
 
+/**
+ * Design and security documents written on boot. The startup-migration
+ * fingerprint hashes this payload (no per-instance config).
+ */
 export function initAuthDB(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   config: AuthDbInitialisationConfig

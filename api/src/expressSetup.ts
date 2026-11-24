@@ -64,7 +64,7 @@ import {api as utilityApi} from './api/utilities';
 import {api as emailVerifyApi} from './api/verificationChallenges';
 import {api as feedbackApi} from './api/feedback';
 import {createHealthApp, READY_PATH} from './healthApp';
-import {shouldReportErrorToBugsnag} from './logging';
+import {startBugsnag} from './bugsnag';
 import patch from './utils/patchExpressAsync';
 
 // This must occur before express app is used
@@ -72,25 +72,12 @@ patch();
 
 const IS_TEST = process.env.NODE_ENV === 'test';
 
-// Bugsnag setup
+// Bugsnag setup. Production boot starts the client in index.ts before
+// migrate; tests import this module without going through index, so start
+// here too (idempotent).
 import Bugsnag from '@bugsnag/js';
-import BugsnagPluginExpress from '@bugsnag/plugin-express';
 
-const bugsnagEnabled = !!config.bugsnagApiKey;
-
-if (bugsnagEnabled) {
-  Bugsnag.start({
-    apiKey: config.bugsnagApiKey!,
-    plugins: [BugsnagPluginExpress],
-    appVersion: config.apiVersion,
-    // Express reports every error passed to next(err). Drop expected 401s and
-    // intentional tombstone 404s; keep 429s and other failures.
-    onError: event => shouldReportErrorToBugsnag(event.originalError),
-  });
-  console.log('Bugsnag enabled');
-} else {
-  console.log('Bugsnag not enabled (no API key set)');
-}
+const bugsnagEnabled = startBugsnag();
 
 // Bugsnag comes first - passes through
 let bugsnagMiddleware: ReturnType<typeof Bugsnag.getPlugin> | undefined;

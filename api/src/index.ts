@@ -14,6 +14,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {registerClient} from '@faims3/data-model';
 import type {Express} from 'express';
+import {startBugsnag} from './bugsnag';
 import {assertLocalStartupConfig, config} from './buildconfig';
 import {getDataDb} from './couchdb';
 import {startOriginalStoreSweep} from './couchdb/mapAssets/originalStoreSweep';
@@ -62,6 +63,8 @@ const startup = async () => {
   const app = createHealthApp();
   await listenHealth(app);
 
+  // Notify migration failures; expressSetup reuses this client.
+  startBugsnag();
   await runStartupMigrations();
 
   const {attachFullApi} = await import('./expressSetup.js');

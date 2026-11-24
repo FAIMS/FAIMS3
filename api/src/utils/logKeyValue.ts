@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/** Optional `key=value` fields for {@link logKeyValue}; undefined values are omitted. */
+/**
+ * Optional `key=value` fields for {@link logKeyValue}; undefined values are
+ * omitted. Callers must not pass secrets (private keys, full PEMs).
+ */
 export type LogKeyValueFields = Record<
   string,
   string | number | boolean | undefined

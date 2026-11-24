@@ -28,6 +28,11 @@
     "tests/permissionfunctions.test.ts",
     "tests/conditionals.test.ts",
     "tests/recordHistory.test.ts",
-    "tests/statusReport.test.ts"
+    "tests/statusReport.test.ts",
+    "tests/dbSetup.test.ts",
+    "tests/dbSetupHashes.test.ts",
+    "tests/migrationVersionRecord.test.ts",
+    "tests/startupMigrationAhead.test.ts",
+    "tests/startupMigrationFingerprint.test.ts"
   ]
 }
