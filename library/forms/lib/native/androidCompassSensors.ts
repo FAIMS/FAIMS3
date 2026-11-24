@@ -14,11 +14,17 @@ interface AndroidCompassSensorsPlugin {
   getAvailability: () => Promise<AndroidCompassSensorAvailability>;
 }
 
-const AndroidCompassSensors = registerPlugin<AndroidCompassSensorsPlugin>(
-  'AndroidCompassSensors'
-);
+let plugin: AndroidCompassSensorsPlugin | undefined;
+
+/** Lazily registered Capacitor Android compass sensor plugin. */
+function androidCompassSensors(): AndroidCompassSensorsPlugin {
+  plugin ??= registerPlugin<AndroidCompassSensorsPlugin>(
+    'AndroidCompassSensors'
+  );
+  return plugin;
+}
 
 /** Read the Android sensors required to calculate a compass heading. */
 export function getAndroidCompassSensorAvailability(): Promise<AndroidCompassSensorAvailability> {
-  return AndroidCompassSensors.getAvailability();
+  return androidCompassSensors().getAvailability();
 }
