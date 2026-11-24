@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {DatabaseInterface} from '../../types';
 import {DatabaseType} from '../migrations/types';
+
+/** `kind` written on new per-database version records. Existing records omit it. */
+export const MIGRATION_VERSION_RECORD_KIND = 'db-version';
+
 export type MigrationLog = {
   // from and to version ID
   from: number;
@@ -33,6 +37,12 @@ export type MigrationLog = {
 };
 
 export type MigrationsDBFields = {
+  /**
+   * Distinguishes version records from other migrations-DB documents (lock,
+   * notebook marker, db-setup). Omitted on records written before this field
+   * existed; {@link isMigrationVersionRecord} still accepts those.
+   */
+  kind?: typeof MIGRATION_VERSION_RECORD_KIND;
   // Which type of database is this referring to
   dbType: DatabaseType;
   // The fully qualified db name (i.e. uniquely specifies the actual database
@@ -48,3 +58,44 @@ export type MigrationsDBFields = {
 export type MigrationsDBDocument =
   PouchDB.Core.ExistingDocument<MigrationsDBFields>;
 export type MigrationsDB = DatabaseInterface<MigrationsDBFields>;
+
+/**
+ * What {@link isMigrationVersionRecord} checks: version-record fields plus an
+ * `_id`. `_rev` is not checked, so it stays optional.
+ */
+export type MigrationVersionRecord = MigrationsDBFields & {
+  _id: string;
+  _rev?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * True for a per-database Couch schema version record.
+ *
+ * New records set {@link MIGRATION_VERSION_RECORD_KIND}. Older records have
+ * no `kind`. Any other `kind` (lock, notebook marker, db-setup) is excluded
+ * even if it happens to reuse `dbType` / `dbName`. The migrations-DB views
+ * duplicate this check inline (map functions cannot import); keep them in
+ * sync and cover both in the parity test.
+ */
+export function isMigrationVersionRecord(
+  doc: unknown
+): doc is MigrationVersionRecord {
+  if (!isRecord(doc)) {
+    return false;
+  }
+  const kind = doc.kind;
+  if (kind !== undefined && kind !== MIGRATION_VERSION_RECORD_KIND) {
+    return false;
+  }
+  return (
+    typeof doc._id === 'string' &&
+    typeof doc.dbType === 'string' &&
+    typeof doc.dbName === 'string' &&
+    typeof doc.version === 'number' &&
+    Array.isArray(doc.migrationLog)
+  );
+}

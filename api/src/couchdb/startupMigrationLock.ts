@@ -29,7 +29,12 @@
  * (age is `now - startedAtMs`, not `updatedAtMs`). A later process start that
  * finds a settled lock therefore re-claims and runs again — migrations are
  * idempotent. Waiters who already joined a live attempt do not re-run while
- * that attempt is still young; they proceed once it writes `complete`/`failed`.
+ * that attempt is still young; they proceed once it writes `complete`/`failed`
+ * with a matching fingerprint.
+ * After a *foreign* settlement, {@link StartupMigrationLockOptions.isClusterAhead}
+ * can skip becoming doer when recorded DB versions, `db-setup` versions or
+ * the notebook UI-schema marker are already past this process — the lock stays as the newer
+ * settlement.
  *
  * Timeout is not "give up and attach". After
  * {@link StartupMigrationLockOptions.timeoutMs} a waiter returns to
@@ -51,8 +56,14 @@
  * fail-opens so the full API can still attach. A successful read resets the
  * streak. 409 on claim is not I/O failure — it means another instance won.
  */
+import {
+  isPouchConflict,
+  isPouchNotFound,
+  startupMigrationFingerprint,
+} from '@faims3/data-model';
 import {randomUUID} from 'node:crypto';
 import {hostname} from 'node:os';
+import {version as packageVersion} from '../../package.json';
 import {logKeyValue, type LogKeyValueFields} from '../utils/logKeyValue';
 
 /** `_id` of the single lock document in the migrations DB. */
@@ -106,6 +117,13 @@ export type StartupMigrationLockAttempt = {
   /** `timed_out` is written when a later claim steals a still-`running` lock. */
   status: 'complete' | 'failed' | 'timed_out';
   error?: string;
+  /**
+   * Boot-migrate fingerprint of the process that ran (or was stolen). Optional
+   * so pre-fingerprint Couch docs still parse. New writers always set it.
+   */
+  fingerprint?: string;
+  /** `config.apiVersion` of that process. Never used for waiter matching. */
+  apiVersion?: string;
 };
 
 /** Shape of the well-known lock document. */
@@ -124,6 +142,13 @@ export type StartupMigrationLockDoc = {
   /** Set when the current attempt settled as `failed`. */
   error?: string;
   history: StartupMigrationLockAttempt[];
+  /**
+   * Fingerprint of the process that last claimed. Optional so pre-fingerprint
+   * Couch docs still parse. New writers always set it on claim.
+   */
+  fingerprint?: string;
+  /** `config.apiVersion` of the claiming process. Not used for matching. */
+  apiVersion?: string;
 };
 
 /**
@@ -171,6 +196,30 @@ export type StartupMigrationLockOptions = {
   now?: () => number;
   /** Delay used for poll and I/O backoff. Injected in tests. */
   sleep?: (ms: number) => Promise<void>;
+  /**
+   * This process's boot-migrate fingerprint. Production
+   * (`runStartupMigrations`) always supplies it. When omitted, filled from
+   * the data-model helper so same-process unit tests keep matching.
+   */
+  fingerprint?: string;
+  /**
+   * Human-readable API version (`config.apiVersion` / package.json). Stored
+   * and logged; never used for waiter matching. Defaults to package.json
+   * `version` (same source as `config.apiVersion`).
+   */
+  apiVersion?: string;
+  /**
+   * After a foreign `complete`/`failed` lock, return true when state the
+   * boot-migrate process itself writes (DB version docs, `db-setup` docs,
+   * the notebook UI-schema marker) is already past this process. Never decide this from
+   * user content such as uploaded notebook `schemaVersion`s, or one imported
+   * notebook would make every upgraded replica skip migrate forever. The
+   * waiter then proceeds without claiming, so an older replica cannot
+   * `forceWrite` init or stamp `failed` over the newer settlement. Matching
+   * fingerprints still re-claim (later startup waves). Omitted: always
+   * re-claim a foreign settlement (unit-test default).
+   */
+  isClusterAhead?: () => Promise<boolean>;
 };
 
 /**
@@ -210,32 +259,6 @@ export function startupMigrationIoBackoffMs(
   return Math.min(maxMs, baseMs * 2 ** exp);
 }
 
-/** Pouch/Couch 409 — another replica wrote the lock first. */
-function isConflict(error: unknown): boolean {
-  return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
-}
-
-/** Pouch/Couch 404 — lock document has never been created. */
-function isNotFound(error: unknown): boolean {
-  return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
-}
-
-function pouchStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-  const status = (error as {status?: unknown}).status;
-  return typeof status === 'number' ? status : undefined;
-}
-
-function pouchName(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-  const name = (error as {name?: unknown}).name;
-  return typeof name === 'string' ? name : undefined;
-}
-
 function errorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -250,13 +273,25 @@ function errorMessage(error: unknown): string {
 function throwIfIoBudgetExceeded(options: {
   event: string;
   instanceId: string;
+  fingerprint: string;
+  apiVersion: string;
   error: unknown;
   consecutiveErrors: number;
   maxIoErrors: number;
 }): void {
-  const {event, instanceId, error, consecutiveErrors, maxIoErrors} = options;
+  const {
+    event,
+    instanceId,
+    fingerprint,
+    apiVersion,
+    error,
+    consecutiveErrors,
+    maxIoErrors,
+  } = options;
   logStartupMigration(event, {
     instance: instanceId,
+    fingerprint,
+    apiVersion,
     consecutiveErrors,
     maxIoErrors,
     error: errorMessage(error),
@@ -273,6 +308,18 @@ function isExpired(
   timeoutMs: number
 ): boolean {
   return nowMs - doc.startedAtMs >= timeoutMs;
+}
+
+function identityFields(source: {fingerprint?: string; apiVersion?: string}): {
+  fingerprint?: string;
+  apiVersion?: string;
+} {
+  return {
+    ...(source.fingerprint !== undefined
+      ? {fingerprint: source.fingerprint}
+      : {}),
+    ...(source.apiVersion !== undefined ? {apiVersion: source.apiVersion} : {}),
+  };
 }
 
 /**
@@ -292,6 +339,7 @@ function archiveRunningAttempt(
     startedAtMs: doc.startedAtMs,
     finishedAtMs,
     status: 'timed_out',
+    ...identityFields(doc),
   };
   return [...doc.history, timedOut].slice(-MAX_LOCK_HISTORY);
 }
@@ -303,10 +351,47 @@ async function readLock(
   try {
     return await db.get(STARTUP_MIGRATION_LOCK_ID);
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
+  }
+}
+
+type TryClaimResult =
+  | {result: 'claimed'}
+  | {result: 'wait'}
+  | {
+      result: 'skip_ahead';
+      status: 'complete' | 'failed';
+      error?: string;
+    };
+
+/**
+ * True when a settled lock was written by a different fingerprint and live
+ * versions are already past this process. Check failures log and return
+ * false so a broken listing still falls through to the existing re-claim.
+ */
+async function clusterIsAheadOfThisProcess(options: {
+  instanceId: string;
+  fingerprint: string;
+  apiVersion: string;
+  isClusterAhead?: () => Promise<boolean>;
+}): Promise<boolean> {
+  const {instanceId, fingerprint, apiVersion, isClusterAhead} = options;
+  if (!isClusterAhead) {
+    return false;
+  }
+  try {
+    return await isClusterAhead();
+  } catch (error) {
+    logStartupMigration('cluster_ahead_check_failed', {
+      instance: instanceId,
+      fingerprint,
+      apiVersion,
+      error: errorMessage(error),
+    });
+    return false;
   }
 }
 
@@ -315,16 +400,29 @@ async function readLock(
  *
  * Returns `claimed` after a successful put of `status: 'running'`. Returns
  * `wait` when another instance holds a non-expired `running` lock, or when
- * the put loses a 409 race. Missing, settled, and expired documents are
- * claimable. Non-409 put/get errors propagate as I/O.
+ * the put loses a 409 race. Returns `skip_ahead` when a settled foreign
+ * lock is already past this process's targets. Missing, matching-settled,
+ * and expired documents are claimable. Non-409 put/get errors propagate
+ * as I/O.
  */
 async function tryClaim(options: {
   db: StartupMigrationLockStore;
   instanceId: string;
+  fingerprint: string;
+  apiVersion: string;
   timeoutMs: number;
   nowMs: number;
-}): Promise<'claimed' | 'wait'> {
-  const {db, instanceId, timeoutMs, nowMs} = options;
+  isClusterAhead?: () => Promise<boolean>;
+}): Promise<TryClaimResult> {
+  const {
+    db,
+    instanceId,
+    fingerprint,
+    apiVersion,
+    timeoutMs,
+    nowMs,
+    isClusterAhead,
+  } = options;
   const existing = await readLock(db);
 
   if (
@@ -332,15 +430,45 @@ async function tryClaim(options: {
     existing.status === 'running' &&
     !isExpired(existing, nowMs, timeoutMs)
   ) {
+    // Foreign running fingerprints still wait; do not steal before timeout.
     logStartupMigration('wait_for_doer', {
       instance: instanceId,
+      fingerprint,
+      apiVersion,
       holder: existing.holderId,
       attempt: existing.attempt,
       startedAtMs: existing.startedAtMs,
       ageMs: nowMs - existing.startedAtMs,
       timeoutMs,
     });
-    return 'wait';
+    return {result: 'wait'};
+  }
+
+  if (
+    existing &&
+    (existing.status === 'complete' || existing.status === 'failed') &&
+    existing.fingerprint !== fingerprint &&
+    (await clusterIsAheadOfThisProcess({
+      instanceId,
+      fingerprint,
+      apiVersion,
+      isClusterAhead,
+    }))
+  ) {
+    logStartupMigration('skip_doer_cluster_ahead', {
+      instance: instanceId,
+      fingerprint,
+      apiVersion,
+      holder: existing.holderId,
+      status: existing.status,
+      docFingerprint: existing.fingerprint,
+      docApiVersion: existing.apiVersion,
+    });
+    return {
+      result: 'skip_ahead',
+      status: existing.status,
+      error: existing.error,
+    };
   }
 
   const next: StartupMigrationLockDoc = {
@@ -353,30 +481,36 @@ async function tryClaim(options: {
     updatedAtMs: nowMs,
     attempt: (existing?.attempt ?? 0) + 1,
     history: existing ? archiveRunningAttempt(existing, nowMs) : [],
+    fingerprint,
+    apiVersion,
   };
 
   try {
     await db.put(next);
   } catch (error) {
-    if (isConflict(error)) {
+    if (isPouchConflict(error)) {
       logStartupMigration('claim_conflict', {
         instance: instanceId,
+        fingerprint,
+        apiVersion,
         previousHolder: existing?.holderId,
         previousStatus: existing?.status,
       });
-      return 'wait';
+      return {result: 'wait'};
     }
     throw error;
   }
 
   logStartupMigration('claimed', {
     instance: instanceId,
+    fingerprint,
+    apiVersion,
     attempt: next.attempt,
     stolen: existing?.status === 'running',
     previousHolder: existing?.holderId,
     previousStatus: existing?.status,
   });
-  return 'claimed';
+  return {result: 'claimed'};
 }
 
 /**
@@ -390,16 +524,21 @@ async function tryClaim(options: {
 async function settleLock(options: {
   db: StartupMigrationLockStore;
   instanceId: string;
+  fingerprint: string;
+  apiVersion: string;
   status: 'complete' | 'failed';
   error?: string;
   nowMs: number;
 }): Promise<void> {
-  const {db, instanceId, status, error, nowMs} = options;
+  const {db, instanceId, fingerprint, apiVersion, status, error, nowMs} =
+    options;
   try {
     const doc = await readLock(db);
     if (!doc || doc.holderId !== instanceId || doc.status !== 'running') {
       logStartupMigration('lost_lock_before_settle', {
         instance: instanceId,
+        fingerprint,
+        apiVersion,
         intendedStatus: status,
         holder: doc?.holderId,
         lockStatus: doc?.status,
@@ -415,6 +554,8 @@ async function settleLock(options: {
         finishedAtMs: nowMs,
         status,
         error,
+        fingerprint,
+        apiVersion,
       },
     ].slice(-MAX_LOCK_HISTORY);
 
@@ -423,10 +564,14 @@ async function settleLock(options: {
       status,
       updatedAtMs: nowMs,
       error,
+      fingerprint,
+      apiVersion,
       history,
     });
     logStartupMigration('settled', {
       instance: instanceId,
+      fingerprint,
+      apiVersion,
       status,
       attempt: doc.attempt,
       durationMs: nowMs - doc.startedAtMs,
@@ -435,6 +580,8 @@ async function settleLock(options: {
   } catch (settleError) {
     logStartupMigration('settle_failed', {
       instance: instanceId,
+      fingerprint,
+      apiVersion,
       intendedStatus: status,
       error: errorMessage(settleError),
     });
@@ -446,11 +593,18 @@ async function settleLock(options: {
  * returned — it does not reject {@link withStartupMigrationLock}.
  */
 async function runAsDoer(
-  options: StartupMigrationLockOptions,
+  options: StartupMigrationLockOptions & {
+    fingerprint: string;
+    apiVersion: string;
+  },
   now: () => number
 ): Promise<StartupMigrationResult> {
-  const {db, instanceId, run} = options;
-  logStartupMigration('doer_begin', {instance: instanceId});
+  const {db, instanceId, run, fingerprint, apiVersion} = options;
+  logStartupMigration('doer_begin', {
+    instance: instanceId,
+    fingerprint,
+    apiVersion,
+  });
   try {
     await run();
   } catch (error) {
@@ -459,6 +613,8 @@ async function runAsDoer(
     await settleLock({
       db,
       instanceId,
+      fingerprint,
+      apiVersion,
       status: 'failed',
       error: message,
       nowMs: now(),
@@ -469,6 +625,8 @@ async function runAsDoer(
   await settleLock({
     db,
     instanceId,
+    fingerprint,
+    apiVersion,
     status: 'complete',
     nowMs: now(),
   });
@@ -488,12 +646,15 @@ async function runAsDoer(
 async function waitForDoer(options: {
   db: StartupMigrationLockStore;
   instanceId: string;
+  fingerprint: string;
+  apiVersion: string;
   timeoutMs: number;
   pollIntervalMs: number;
   maxIoErrors: number;
   ioBackoffMs: (consecutiveErrors: number) => number;
   now: () => number;
   sleep: (ms: number) => Promise<void>;
+  isClusterAhead?: () => Promise<boolean>;
 }): Promise<
   | {action: 'proceed'; status: 'complete' | 'failed'; error?: string}
   | {action: 'retry'}
@@ -501,12 +662,15 @@ async function waitForDoer(options: {
   const {
     db,
     instanceId,
+    fingerprint,
+    apiVersion,
     timeoutMs,
     pollIntervalMs,
     maxIoErrors,
     ioBackoffMs,
     now,
     sleep,
+    isClusterAhead,
   } = options;
   let polls = 0;
   let consecutiveErrors = 0;
@@ -525,6 +689,8 @@ async function waitForDoer(options: {
       throwIfIoBudgetExceeded({
         event: 'wait_io_error',
         instanceId,
+        fingerprint,
+        apiVersion,
         error,
         consecutiveErrors,
         maxIoErrors,
@@ -535,25 +701,64 @@ async function waitForDoer(options: {
     polls += 1;
 
     if (!doc) {
-      logStartupMigration('lock_missing_while_waiting', {instance: instanceId});
+      logStartupMigration('lock_missing_while_waiting', {
+        instance: instanceId,
+        fingerprint,
+        apiVersion,
+      });
       return {action: 'retry'};
     }
 
     if (doc.status === 'complete' || doc.status === 'failed') {
-      logStartupMigration('doer_settled', {
+      if (doc.fingerprint === fingerprint) {
+        logStartupMigration('doer_settled', {
+          instance: instanceId,
+          fingerprint,
+          apiVersion,
+          holder: doc.holderId,
+          status: doc.status,
+          attempt: doc.attempt,
+          error: doc.error,
+        });
+        return {action: 'proceed', status: doc.status, error: doc.error};
+      }
+      logStartupMigration('doer_settled_foreign_fingerprint', {
         instance: instanceId,
         holder: doc.holderId,
         status: doc.status,
-        attempt: doc.attempt,
-        error: doc.error,
+        fingerprint,
+        docFingerprint: doc.fingerprint,
+        apiVersion,
+        docApiVersion: doc.apiVersion,
       });
-      return {action: 'proceed', status: doc.status, error: doc.error};
+      if (
+        await clusterIsAheadOfThisProcess({
+          instanceId,
+          fingerprint,
+          apiVersion,
+          isClusterAhead,
+        })
+      ) {
+        logStartupMigration('skip_doer_cluster_ahead', {
+          instance: instanceId,
+          fingerprint,
+          apiVersion,
+          holder: doc.holderId,
+          status: doc.status,
+          docFingerprint: doc.fingerprint,
+          docApiVersion: doc.apiVersion,
+        });
+        return {action: 'proceed', status: doc.status, error: doc.error};
+      }
+      return {action: 'retry'};
     }
 
     const ageMs = nowMs - doc.startedAtMs;
     if (isExpired(doc, nowMs, timeoutMs)) {
       logStartupMigration('doer_timeout', {
         instance: instanceId,
+        fingerprint,
+        apiVersion,
         holder: doc.holderId,
         attempt: doc.attempt,
         ageMs,
@@ -565,6 +770,8 @@ async function waitForDoer(options: {
     if (polls === 1 || polls % WAIT_LOG_EVERY_POLLS === 0) {
       logStartupMigration('still_waiting', {
         instance: instanceId,
+        fingerprint,
+        apiVersion,
         holder: doc.holderId,
         attempt: doc.attempt,
         ageMs,
@@ -585,6 +792,14 @@ async function waitForDoer(options: {
  * lock past `timeoutMs` is recovered by timeout + steal + re-run (the
  * original doer is not cancelled).
  *
+ * Waiters accept `complete`/`failed` only when `doc.fingerprint` equals this
+ * process's fingerprint. A missing or different fingerprint logs
+ * `doer_settled_foreign_fingerprint`. When live versions are already past
+ * this process ({@link StartupMigrationLockOptions.isClusterAhead}), the
+ * waiter proceeds and leaves the lock alone; otherwise it retries into
+ * {@link tryClaim}. A live `running` lock is never stolen just because its
+ * fingerprint differs.
+ *
  * @returns Who ran and how the attempt settled. Waiters never invoke `run`.
  */
 export async function withStartupMigrationLock(
@@ -597,18 +812,30 @@ export async function withStartupMigrationLock(
   const ioBackoffMs = options.ioBackoffMs ?? startupMigrationIoBackoffMs;
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? sleepMs;
+  const fingerprint =
+    options.fingerprint ?? (await startupMigrationFingerprint());
+  const apiVersion = options.apiVersion ?? packageVersion;
+  const resolved = {...options, fingerprint, apiVersion};
   let consecutiveClaimErrors = 0;
 
-  logStartupMigration('begin', {instance: options.instanceId, timeoutMs});
+  logStartupMigration('begin', {
+    instance: options.instanceId,
+    fingerprint,
+    apiVersion,
+    timeoutMs,
+  });
 
   while (true) {
-    let claim: 'claimed' | 'wait';
+    let claim: TryClaimResult;
     try {
       claim = await tryClaim({
         db: options.db,
         instanceId: options.instanceId,
+        fingerprint,
+        apiVersion,
         timeoutMs,
         nowMs: now(),
+        isClusterAhead: options.isClusterAhead,
       });
       consecutiveClaimErrors = 0;
     } catch (error) {
@@ -616,6 +843,8 @@ export async function withStartupMigrationLock(
       throwIfIoBudgetExceeded({
         event: 'claim_io_error',
         instanceId: options.instanceId,
+        fingerprint,
+        apiVersion,
         error,
         consecutiveErrors: consecutiveClaimErrors,
         maxIoErrors,
@@ -624,10 +853,29 @@ export async function withStartupMigrationLock(
       continue;
     }
 
-    if (claim === 'claimed') {
-      const result = await runAsDoer(options, now);
+    if (claim.result === 'skip_ahead') {
+      const result: StartupMigrationResult = {
+        role: 'waiter',
+        status: claim.status,
+        error: claim.error,
+      };
       logStartupMigration('finish', {
         instance: options.instanceId,
+        fingerprint,
+        apiVersion,
+        role: result.role,
+        status: result.status,
+        error: result.error,
+      });
+      return result;
+    }
+
+    if (claim.result === 'claimed') {
+      const result = await runAsDoer(resolved, now);
+      logStartupMigration('finish', {
+        instance: options.instanceId,
+        fingerprint,
+        apiVersion,
         role: result.role,
         status: result.status,
         error: result.error,
@@ -638,12 +886,15 @@ export async function withStartupMigrationLock(
     const wait = await waitForDoer({
       db: options.db,
       instanceId: options.instanceId,
+      fingerprint,
+      apiVersion,
       timeoutMs,
       pollIntervalMs,
       maxIoErrors,
       ioBackoffMs,
       now,
       sleep,
+      isClusterAhead: options.isClusterAhead,
     });
 
     if (wait.action === 'proceed') {
@@ -654,6 +905,8 @@ export async function withStartupMigrationLock(
       };
       logStartupMigration('finish', {
         instance: options.instanceId,
+        fingerprint,
+        apiVersion,
         role: result.role,
         status: result.status,
         error: result.error,

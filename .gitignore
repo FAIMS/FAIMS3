@@ -27,6 +27,8 @@ __pycache__/
 .sops.yaml
 .jest-cache
 tmp
+.tmp-jest
+.tmp-vitest
 tmp/
 .token
 Procfile

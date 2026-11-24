@@ -281,7 +281,7 @@ function hasSameStoredContent(desired: {}, existing: {}): boolean {
  * changes, so this turns the usual case into a single read and stops each
  * boot adding a revision to every design document.
  */
-async function writeInitialisationDocument({
+export async function writeInitialisationDocument({
   db,
   data,
   forceWrite,
@@ -385,4 +385,26 @@ export async function createHash(data: string): Promise<string> {
   }
   // If we can't load a module, throw an error
   throw new Error('Could not load crypto module for hashing');
+}
+
+function pouchErrorField(error: unknown, field: 'status' | 'name'): unknown {
+  return typeof error === 'object' && error !== null
+    ? (error as Record<string, unknown>)[field]
+    : undefined;
+}
+
+/** Pouch/Couch 404: the document (or database) does not exist. */
+export function isPouchNotFound(error: unknown): boolean {
+  return (
+    pouchErrorField(error, 'status') === 404 ||
+    pouchErrorField(error, 'name') === 'not_found'
+  );
+}
+
+/** Pouch/Couch 409: another writer updated the document first. */
+export function isPouchConflict(error: unknown): boolean {
+  return (
+    pouchErrorField(error, 'status') === 409 ||
+    pouchErrorField(error, 'name') === 'conflict'
+  );
 }
