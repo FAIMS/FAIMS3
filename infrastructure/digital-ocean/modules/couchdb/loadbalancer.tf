@@ -23,13 +23,13 @@ resource "digitalocean_loadbalancer" "couchdb-lb" {
   }
 
   healthcheck {
-    port     = 5984
-    path     = "/"
-    protocol = "http"
+    port                   = 5984
+    path                   = "/"
+    protocol               = "http"
     check_interval_seconds = 60
   }
 
   depends_on = [digitalocean_certificate.lb_certificate]
 
-  droplet_ids = digitalocean_droplet.couchdb.*.id
+  droplet_ids = [digitalocean_droplet.couchdb.id]
 }

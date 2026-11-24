@@ -15,9 +15,10 @@ const validConfig = {
     instanceSize: 'basic-m',
   },
   couch: {
+    version: '3.5.3',
+    dropletImage: 'ubuntu-24-04-x64',
     dropletSize: 's-2vcpu-4gb-intel',
     volumeSize: 400,
-    instanceCount: 1,
   },
   storage: {
     bucket: 'faims-map-assets',
@@ -26,6 +27,17 @@ const validConfig = {
   backup: {
     bucket: 'faims-example-backups',
     endpoint: 'https://syd1.digitaloceanspaces.com',
+    schedule: {
+      onCalendar: '*-*-* 03:00:00',
+      randomizedDelayMinutes: 15,
+    },
+    retention: {
+      daily: 7,
+      weekly: 4,
+      monthly: 12,
+    },
+    tag: 'couchdb-backup',
+    logDir: '/var/log/couchdb-backup',
   },
 };
 
@@ -54,6 +66,23 @@ test('parseDoConfig rejects an unpinned conductor image tag', () => {
 test('parseDoConfig requires all currently consumed fields', () => {
   const {storage: _storage, ...withoutStorage} = validConfig;
   assert.throws(() => parseDoConfig(withoutStorage), ZodError);
+});
+
+test('parseDoConfig rejects non-positive backup retention values', () => {
+  assert.throws(
+    () =>
+      parseDoConfig({
+        ...validConfig,
+        backup: {
+          ...validConfig.backup,
+          retention: {
+            ...validConfig.backup.retention,
+            daily: 0,
+          },
+        },
+      }),
+    ZodError
+  );
 });
 
 test('DoSecretsSchema accepts backup credentials', () => {

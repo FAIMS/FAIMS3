@@ -7,6 +7,7 @@ The long-term goal is to follow the same pattern used by the AWS deployment path
 - `core.json` holds shared, non-secret deployment/runtime configuration,
   including the canonical `domains.base` and service hostnames
 - `do.json` holds DigitalOcean-only resource settings
+  - includes `backup` schedule/retention settings for the CouchDB restic timer
 - `secrets.enc.json` is optional and encrypted via SOPS for secret overlays
 - `do-secrets.enc.json` is required for deployment and encrypted via SOPS for
   DigitalOcean-only backup credentials

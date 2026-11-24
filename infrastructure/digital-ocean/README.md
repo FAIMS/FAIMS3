@@ -36,6 +36,12 @@ currently covers only the fields consumed by the Terraform deployment and
 rejects unknown fields so new settings must be added deliberately as modules
 adopt them.
 
+CouchDB backup behavior is configured from `do.json` under `backup`:
+- `bucket` and `endpoint` (required) for the Spaces repository
+- optional `schedule.onCalendar` and `schedule.randomizedDelayMinutes` for the
+  systemd timer (UTC)
+- optional `retention.daily|weekly|monthly`, `tag`, and `logDir`
+
 Validate an environment directory with:
 
 ```bash

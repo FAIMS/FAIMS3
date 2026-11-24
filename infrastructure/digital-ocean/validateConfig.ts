@@ -8,6 +8,7 @@ const nonEmptyString = z.string().trim().min(1);
 const regionSlug = z
   .string()
   .regex(/^[a-z]{3}[0-9]$/, 'Expected a region slug such as syd1');
+const positiveInt = z.number().int().positive();
 export const DoConfigSchema = z
   .object({
     region: regionSlug,
@@ -21,9 +22,13 @@ export const DoConfigSchema = z
       .strict(),
     couch: z
       .object({
+        version: nonEmptyString.regex(
+          /^\d+\.\d+\.\d+$/,
+          'CouchDB version must be a semantic version such as 3.5.3'
+        ),
+        dropletImage: nonEmptyString,
         dropletSize: nonEmptyString,
         volumeSize: z.number().int().positive(),
-        instanceCount: z.number().int().positive(),
         snapshotId: z.string().trim().min(1).optional(),
       })
       .strict(),
@@ -41,6 +46,23 @@ export const DoConfigSchema = z
         endpoint: z.url().refine(value => value.startsWith('https://'), {
           message: 'The backup endpoint must use HTTPS',
         }),
+        schedule: z
+          .object({
+            onCalendar: nonEmptyString,
+            randomizedDelayMinutes: z.number().int().nonnegative(),
+          })
+          .strict()
+          .optional(),
+        retention: z
+          .object({
+            daily: positiveInt,
+            weekly: positiveInt,
+            monthly: positiveInt,
+          })
+          .strict()
+          .optional(),
+        tag: nonEmptyString.optional(),
+        logDir: nonEmptyString.optional(),
       })
       .strict(),
   })

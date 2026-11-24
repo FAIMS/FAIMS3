@@ -43,3 +43,7 @@ output "generated_apps_secret_env_keys" {
   value = module.deployment.generated_apps_secret_env_keys
 }
 
+output "couchdb_backup_timer_configuration" {
+  value = module.deployment.couchdb_backup_timer_configuration
+}
+

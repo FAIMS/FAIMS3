@@ -6,13 +6,41 @@ DO_SPACES_BUCKET=${var.backup_bucket}
 AWS_ACCESS_KEY_ID=${var.backup_access_key_id}
 AWS_SECRET_ACCESS_KEY=${var.backup_secret_access_key}
 RESTIC_PASSWORD=${var.restic_password}
-KEEP_DAILY=7
-KEEP_WEEKLY=4
-KEEP_MONTHLY=12
-BACKUP_TAG=couchdb-backup
-LOG_DIR=/var/log/couchdb-backup
+KEEP_DAILY=${var.backup_keep_daily}
+KEEP_WEEKLY=${var.backup_keep_weekly}
+KEEP_MONTHLY=${var.backup_keep_monthly}
+BACKUP_TAG=${var.backup_tag}
+LOG_DIR=${var.backup_log_dir}
 NOTIFY_EMAIL=
 NOTIFY_WEBHOOK=
+EOT
+
+  generated_backup_service = <<-EOT
+[Unit]
+Description=Run CouchDB backup to DigitalOcean Spaces via restic
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/backup/couchdb-backup-restic.sh
+User=root
+Group=root
+EOT
+
+  generated_backup_timer = <<-EOT
+[Unit]
+Description=Schedule CouchDB backups
+
+[Timer]
+TimeZone=UTC
+OnCalendar=${var.backup_on_calendar}
+Persistent=true
+RandomizedDelaySec=${var.backup_randomized_delay_sec}
+AccuracySec=1m
+
+[Install]
+WantedBy=timers.target
 EOT
 
   generated_local_ini = <<-EOT
@@ -78,14 +106,8 @@ data "cloudinit_config" "couchdb_config" {
             source : "deb https://apache.jfrog.io/artifactory/couchdb-deb/ $RELEASE main"
           }
         }
-        debconf_selections = {
-          # install couchdb without prompting for configuration
-          # since we'll add the configuration local.ini later
-          c1 : "couchdb couchdb/mode select none"
-        }
       }
       packages = [
-        "couchdb",
         "jq",     # for backup scripts
         "restic", # for backup scripts
       ]
@@ -107,6 +129,18 @@ data "cloudinit_config" "couchdb_config" {
           content     = base64encode(local.generated_backup_env)
           path        = "/opt/backup/backup.env"
           permissions = "0600"
+        },
+        {
+          encoding    = "b64"
+          content     = base64encode(local.generated_backup_service)
+          path        = "/etc/systemd/system/couchdb-backup.service"
+          permissions = "0644"
+        },
+        {
+          encoding    = "b64"
+          content     = base64encode(local.generated_backup_timer)
+          path        = "/etc/systemd/system/couchdb-backup.timer"
+          permissions = "0644"
         }
       ]
       runcmd = [
@@ -121,10 +155,27 @@ data "cloudinit_config" "couchdb_config" {
         "grep -q \" $DEVICE /mnt/couchdb \" /proc/mounts || mountpoint -q /mnt/couchdb || (grep -q \"/mnt/couchdb\" /etc/fstab || echo \"$DEVICE /mnt/couchdb ext4 defaults,nofail,discard 0 2\" >> /etc/fstab)",
         "mountpoint -q /mnt/couchdb || mount /mnt/couchdb",
         "mkdir -p /mnt/couchdb/data",
+        # Install and configure CouchDB
+        # make sure we don't automatically start CouchDB during installation
+        "printf '%s\\n' 'couchdb couchdb/mode select none' | debconf-set-selections",
+        "printf '%s\\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d",
+        "chmod 0755 /usr/sbin/policy-rc.d",
+        # validate our couchdb version
+        "COUCHDB_PACKAGE=\"$(apt-cache madison couchdb | awk -v version='${var.couchdb_version}' '$3 ~ (\"^\" version \"([.~+-]|$)\") { print $3; exit }')\"",
+        "test -n \"$COUCHDB_PACKAGE\"",
+        "if ! DEBIAN_FRONTEND=noninteractive apt-get install -y \"couchdb=$COUCHDB_PACKAGE\"; then rm -f /usr/sbin/policy-rc.d; exit 1; fi",
+        "apt-mark hold couchdb",
+        # clean up
+        "rm -f /usr/sbin/policy-rc.d",
+        # give the couchdb user ownership of the data directory
         "chown -R couchdb:couchdb /mnt/couchdb/data",
+        # generate local.ini
         "echo '${base64encode(local.generated_local_ini)}' | base64 -d > /opt/couchdb/etc/local.d/local.ini",
         "chmod 0600 /opt/couchdb/etc/local.d/local.ini",
-        "service couchdb start"
+        "service couchdb start",
+        # configure backup timer
+        "systemctl daemon-reload",
+        "systemctl enable --now couchdb-backup.timer"
       ]
     })
   }
@@ -132,8 +183,7 @@ data "cloudinit_config" "couchdb_config" {
 
 resource "digitalocean_volume" "couchdb-volume" {
   region                  = var.region
-  count                   = var.instance_count
-  name                    = "couchdb-data-${count.index}-${replace(var.deployment_domain, ".", "-")}"
+  name                    = "couchdb-data-${replace(var.deployment_domain, ".", "-")}"
   size                    = var.couchdb_volume_size
   initial_filesystem_type = "ext4"
   snapshot_id             = trimspace(var.couchdb_volume_snapshot_id) == "" ? null : var.couchdb_volume_snapshot_id
@@ -141,25 +191,18 @@ resource "digitalocean_volume" "couchdb-volume" {
 }
 
 resource "digitalocean_volume_attachment" "couchdb-volume" {
-  count      = var.instance_count
-  droplet_id = digitalocean_droplet.couchdb[count.index].id
-  volume_id  = digitalocean_volume.couchdb-volume[count.index].id
+  droplet_id = digitalocean_droplet.couchdb.id
+  volume_id  = digitalocean_volume.couchdb-volume.id
 }
 
 resource "digitalocean_droplet" "couchdb" {
-  image  = "ubuntu-24-04-x64"
-  name   = "couchdb-${count.index}-${var.deployment_domain}"
+  image  = var.droplet_image
+  name   = "couchdb-${var.deployment_domain}"
   region = var.region
   size   = var.droplet_size
-  count  = var.instance_count
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
   ]
   user_data = data.cloudinit_config.couchdb_config.rendered
 }
 
-resource "digitalocean_domain" "couchdb-instance" {
-  name       = "couchdb-${count.index}.${var.deployment_domain}"
-  ip_address = digitalocean_droplet.couchdb[count.index].ipv4_address
-  count      = var.instance_count
-}
