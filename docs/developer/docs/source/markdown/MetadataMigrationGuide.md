@@ -78,7 +78,7 @@ To run it by hand instead (for a controlled run with the API scaled down), from 
 ```bash
 cd api
 # Ensure your .env file is accurately targetting your DB
-pnpm run migrate          # structure + migrations; no JWT key push
+pnpm run migrate          # structure + migrations + notebook walk; no JWT key push
 # or, when keys must be (re)written (same flags as API boot):
 pnpm run migrate-with-keys
 ```

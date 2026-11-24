@@ -65,14 +65,14 @@ The `migrations` database holds the version records, setup records, lock and not
 
 ## What one migration run does
 
-A full run happens in this order. API startup does all of it; the command-line `migrate` script does steps 1–4 (see [Command line](#from-the-command-line)).
+A full run happens in this order. API startup and the command-line `migrate` script both do all of it; the command line can skip steps 5–6 with `--skip-notebooks` (see [Command line](#from-the-command-line)).
 
 1. **Initialise.** Make sure every global database exists (the `migrations` database first), and bring its [design and security documents](#design-and-security-documents) in line with the running code using the rules above. Then do the same for every project's data database. Creating a survey also writes that data database's `db-setup` record, at the same time as its version record.
 2. **Push the JWT signing key** to CouchDB's configuration, so CouchDB accepts tokens signed by this API. (The CLI only does this with `migrate-with-keys`.)
 3. **Migrate the global databases**, one at a time, in a fixed order. They run one at a time because a step for one database may read another.
 4. **Migrate every project's data database**, four at a time. Then make sure the admin user exists.
 5. **Walk the notebook designs** (`validateDatabases`). For every project and template, including archived ones, rewrite the stored design if its `schemaVersion` is older than this build's. Designs that are current or **newer** are left alone.
-6. **Record the notebook marker.** Raise the `notebook-ui-schema-state` document to this build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION` (it is never lowered). This records that a build at this version has run the walk. See [Why notebooks use a marker](#why-notebooks-use-a-marker).
+6. **Record the notebook marker.** If the walk completed, raise the `notebook-ui-schema-state` document to this build's `CURRENT_NOTEBOOK_UI_SCHEMA_VERSION` (it is never lowered). This records that a build at this version has run the walk. See [Why notebooks use a marker](#why-notebooks-use-a-marker).
 
 ### How a single database is migrated
 
@@ -104,8 +104,9 @@ Step 3 always finishes, whether or not the migration succeeded. If it failed, th
 From `api/`, with `.env` pointing at the target CouchDB:
 
 ```bash
-pnpm run migrate             # initialise + migrate; does not push the JWT key
-pnpm run migrate-with-keys   # same, and push the JWT key (what startup does)
+pnpm run migrate                    # everything startup does, forced; does not push the JWT key
+pnpm run migrate-with-keys          # same, and push the JWT key
+pnpm run migrate --skip-notebooks   # skip the notebook design walk and marker
 ```
 
 In a Docker setup, run it inside the container so it uses the container's CouchDB URL:
@@ -114,20 +115,21 @@ In a Docker setup, run it inside the container so it uses the container's CouchD
 docker compose exec conductor pnpm run migrate
 ```
 
-The command line differs from startup in a few ways:
+The rule of thumb: the command line does everything startup does, but forcefully. The differences:
 
-|                            | API startup                   | `pnpm run migrate` / `migrate-with-keys` |
-| -------------------------- | ----------------------------- | ---------------------------------------- |
-| Takes the startup lock     | Yes, when the lock is enabled | **No**                                   |
-| Notebook design walk       | Yes                           | No                                       |
-| Writes the notebook marker | Yes                           | No                                       |
-| Pushes the JWT key         | Yes                           | Only `migrate-with-keys`                 |
-| Design / security docs     | Only when `db-setup` says so  | Always pushed, and `db-setup` rewritten  |
-| On failure                 | Logs, then starts the API     | Exits with code 1                        |
+|                            | API startup                     | `pnpm run migrate` / `migrate-with-keys`                 |
+| -------------------------- | ------------------------------- | -------------------------------------------------------- |
+| Takes the startup lock     | Yes, when the lock is enabled   | **No**                                                   |
+| Cluster-ahead check        | Yes, after a foreign settlement | **No**                                                   |
+| Notebook design walk       | Yes                             | Yes, unless `--skip-notebooks`                           |
+| Writes the notebook marker | Yes, if the walk completed      | Yes, if the walk completed (not with `--skip-notebooks`) |
+| Pushes the JWT key         | Yes                             | Only `migrate-with-keys`                                 |
+| Design / security docs     | Only when `db-setup` says so    | Always pushed, and `db-setup` rewritten                  |
+| On failure                 | Logs, then starts the API       | Exits with code 1 (including a failed notebook walk)     |
 
-The command line pushes every database's design and security documents even when its `db-setup` record says they are up to date. It then rewrites the record with this build's version and hash, and logs the result as `[db-setup] forced`. Use it to repair a database whose live documents drifted from the record, for example after the database was recreated. A record whose version is ahead of this build is still left alone; clear it with `reset-setup` first if you mean to push over it. Couch version records and migration statuses work the same as at startup.
+The command line pushes every database's design and security documents even when its `db-setup` record says they are up to date. It then rewrites the record with this build's version and hash, and logs the result as `[db-setup] forced`. Use it to repair a database whose live documents drifted from the record, for example after the database was recreated. A record whose version is ahead of this build is still left alone; clear it with `reset-setup` first if you mean to push over it. Couch version records and migration statuses work the same as at startup. The notebook walk never downgrades a design that is current or newer, and the marker is only ever raised, so running an older build's command line cannot undo a newer build's notebook work.
 
-Because the command line does not take the lock, **do not run it against a live cluster that is also starting up**. Scale the API down first, or just let startup do the work. The command line is useful for a controlled run before replicas start, to push keys, or to retry after a failure.
+Because the command line does not take the lock, **do not run it against a live cluster that is also starting up**: both would write design documents and notebook designs at once. Scale the API down first, or just let startup do the work. The command line is useful for a controlled run before replicas start, to push keys, or to retry after a failure. Use `--skip-notebooks` on large deployments when you only need to repair databases or push keys.
 
 ## Settings
 
@@ -218,7 +220,7 @@ One document that coordinates replicas. It records who holds it (`holderId`, as 
 }
 ```
 
-It means "a build targeting notebook schema `1.0.1` has run the notebook walk". It does **not** mean every notebook is at that version: the walk carries on past individual notebooks that fail. Only startup writes it, and only upwards. The fingerprint, API version and writer are there to help with debugging.
+It means "a build targeting notebook schema `1.0.1` has run the notebook walk". It does **not** mean every notebook is at that version: the walk carries on past individual notebooks that fail. Startup and the command-line `migrate` write it after a walk that completed (not with `--skip-notebooks`), and only upwards. The fingerprint, API version and writer are there to help with debugging.
 
 Version-record views select by `kind` (`db-version`, or missing for old records) plus the version-record fields. The lock, marker and `db-setup` documents have a different `kind`, so the migration service never mistakes them for version records.
 

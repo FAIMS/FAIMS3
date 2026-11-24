@@ -118,6 +118,11 @@ configuration, then exclude this flag
 pnpm run migrate
 ```
 
+`migrate` does everything API boot does, but forcefully: it pushes design and
+security documents regardless of their `db-setup` records, then walks notebook
+designs and raises the notebook marker. Add `--skip-notebooks` to skip the
+notebook walk.
+
 **Note** If you are running inside a container, then the above command needs to be
 run in the container rather than from your local environment:
 

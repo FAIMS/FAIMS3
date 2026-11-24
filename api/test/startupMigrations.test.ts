@@ -54,7 +54,10 @@ vi.mock('../src/couchdb/startupMigrationLock', async importOriginal => {
   };
 });
 
-import {runStartupMigrations} from '../src/couchdb/startupMigrations';
+import {
+  runManualMigration,
+  runStartupMigrations,
+} from '../src/couchdb/startupMigrations';
 
 describe('runStartupMigrations', () => {
   const lockDb = {get: vi.fn(), put: vi.fn()};
@@ -135,6 +138,14 @@ describe('runStartupMigrations', () => {
     validateDatabases.mockRejectedValueOnce(new Error('walk exploded'));
 
     await expect(runStartupMigrations()).resolves.toBeUndefined();
+    expect(writeNotebookSchemaMarker).not.toHaveBeenCalled();
+  });
+
+  it('does not write the marker when the notebook walk reports invalid', async () => {
+    validateDatabases.mockResolvedValueOnce({valid: false});
+
+    await expect(runStartupMigrations()).resolves.toBeUndefined();
+    expect(validateDatabases).toHaveBeenCalledOnce();
     expect(writeNotebookSchemaMarker).not.toHaveBeenCalled();
   });
 
@@ -229,5 +240,91 @@ describe('runStartupMigrations', () => {
     expect(withStartupMigrationLock).not.toHaveBeenCalled();
     expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
     expect(validateDatabases).not.toHaveBeenCalled();
+  });
+});
+
+describe('runManualMigration', () => {
+  const migrationsDb = {get: vi.fn(), put: vi.fn()};
+
+  beforeEach(() => {
+    getMigrationDbStore.mockReset();
+    initialiseAndMigrateDBs.mockReset();
+    validateDatabases.mockReset();
+    withStartupMigrationLock.mockReset();
+    getStartupMigrationFingerprint.mockReset();
+    writeNotebookSchemaMarker.mockReset();
+    writeNotebookSchemaMarker.mockResolvedValue({
+      written: true,
+      schemaVersion: '1.0.1',
+    });
+    getMigrationDbStore.mockReturnValue(migrationsDb);
+    initialiseAndMigrateDBs.mockResolvedValue(undefined);
+    validateDatabases.mockResolvedValue({valid: true});
+    configMock.apiVersion = '1.11.0';
+  });
+
+  it('forces setup, walks notebooks and writes the marker without the lock', async () => {
+    await expect(runManualMigration({pushKeys: true})).resolves.toBeUndefined();
+
+    expect(withStartupMigrationLock).not.toHaveBeenCalled();
+    expect(getStartupMigrationFingerprint).not.toHaveBeenCalled();
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledWith({
+      force: true,
+      forceSetup: true,
+      pushKeys: true,
+      setupDiagnostics: {
+        apiVersion: '1.11.0',
+        writerId: expect.stringContaining(`:${process.pid}:`),
+      },
+    });
+    expect(validateDatabases).toHaveBeenCalledOnce();
+    expect(writeNotebookSchemaMarker).toHaveBeenCalledWith(
+      expect.objectContaining({db: migrationsDb, apiVersion: '1.11.0'})
+    );
+    expect(initialiseAndMigrateDBs.mock.invocationCallOrder[0]).toBeLessThan(
+      validateDatabases.mock.invocationCallOrder[0]!
+    );
+    expect(validateDatabases.mock.invocationCallOrder[0]).toBeLessThan(
+      writeNotebookSchemaMarker.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('passes pushKeys through', async () => {
+    await runManualMigration({pushKeys: false});
+
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledWith(
+      expect.objectContaining({pushKeys: false, forceSetup: true})
+    );
+  });
+
+  it('skips the walk and the marker with skipNotebooks', async () => {
+    await expect(
+      runManualMigration({pushKeys: false, skipNotebooks: true})
+    ).resolves.toBeUndefined();
+
+    expect(initialiseAndMigrateDBs).toHaveBeenCalledOnce();
+    expect(validateDatabases).not.toHaveBeenCalled();
+    expect(writeNotebookSchemaMarker).not.toHaveBeenCalled();
+  });
+
+  it('throws and does not write the marker when the walk reports invalid', async () => {
+    validateDatabases.mockResolvedValueOnce({valid: false});
+
+    await expect(runManualMigration({pushKeys: false})).rejects.toThrow(
+      /Notebook uiSpec walk did not complete/
+    );
+    expect(writeNotebookSchemaMarker).not.toHaveBeenCalled();
+  });
+
+  it('propagates a Couch migrate failure without walking notebooks', async () => {
+    initialiseAndMigrateDBs.mockRejectedValueOnce(
+      new Error('migrate exploded')
+    );
+
+    await expect(runManualMigration({pushKeys: false})).rejects.toThrow(
+      'migrate exploded'
+    );
+    expect(validateDatabases).not.toHaveBeenCalled();
+    expect(writeNotebookSchemaMarker).not.toHaveBeenCalled();
   });
 });

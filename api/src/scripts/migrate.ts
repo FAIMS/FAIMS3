@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable n/no-process-exit */
 import {startBugsnag} from '../bugsnag';
-import {initialiseAndMigrateDBs} from '../couchdb';
+import {runManualMigration} from '../couchdb/startupMigrations';
 
 /**
- * Main function to run database initialisation and migration
- * Accepts optional --keys flag to control whether public keys should be pushed
+ * Main function to run database initialisation and migration.
+ *
+ * Flags:
+ * - `--keys`: also push the JWT public key configuration
+ * - `--skip-notebooks`: skip the notebook uiSpec walk and marker
  */
 const main = async () => {
   try {
-    // Check if --keys flag is present in command line arguments
     const pushKeys = process.argv.includes('--keys');
+    const skipNotebooks = process.argv.includes('--skip-notebooks');
 
-    // Log whether keys will be configured
     console.log(
       `Public keys will ${pushKeys ? '' : 'not '}be configured during migration`
+    );
+    console.log(
+      `Notebook designs will ${skipNotebooks ? 'not ' : ''}be migrated`
     );
 
     startBugsnag();
 
-    // Manual migrate repairs design/security docs regardless of the db-setup
-    // records (boot trusts them)
-    await initialiseAndMigrateDBs({
-      force: true,
-      forceSetup: true,
-      pushKeys: pushKeys,
-    });
+    await runManualMigration({pushKeys, skipNotebooks});
 
     console.log('Migration completed successfully');
     process.exit(0);

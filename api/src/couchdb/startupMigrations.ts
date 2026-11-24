@@ -22,6 +22,8 @@
  * are already ahead of this process. Notebook "ahead" comes from the marker, not from individual
  * notebooks, because uploaded uiSpecs can carry any `schemaVersion`.
  *
+ * The marker is only raised after a walk that completed.
+ *
  * When the lock is off (default, local/dev): those steps run on this
  * process with no claim/wait. Rapid reloads can otherwise leave a
  * `running` lock that strands the next boot until
@@ -74,6 +76,29 @@ async function recordNotebookSchemaMarker(
   }
 }
 
+/**
+ * Walk notebook uiSpecs, then raise the marker. `validateDatabases` reports
+ * failure as `{valid: false}` rather than throwing; the marker is only
+ * written after a walk that completed.
+ * @returns whether the walk completed
+ */
+async function runNotebookWalk(
+  instanceId: string,
+  fingerprint?: string
+): Promise<boolean> {
+  logStartupMigration('notebook_migrate_begin', {instance: instanceId});
+  const report = await validateDatabases();
+  if (!report.valid) {
+    logStartupMigration('notebook_migrate_failed', {instance: instanceId});
+    return false;
+  }
+  logStartupMigration('notebook_migrate_complete', {
+    instance: instanceId,
+  });
+  await recordNotebookSchemaMarker(instanceId, fingerprint);
+  return true;
+}
+
 /** Migrate Couch DBs, then notebook uiSpecs. Thrown errors propagate to the caller. */
 async function runMigrationWork(
   instanceId: string,
@@ -91,12 +116,51 @@ async function runMigrationWork(
   });
   logStartupMigration('db_migrate_complete', {instance: instanceId});
 
-  logStartupMigration('notebook_migrate_begin', {instance: instanceId});
-  await validateDatabases();
-  logStartupMigration('notebook_migrate_complete', {
+  await runNotebookWalk(instanceId, fingerprint);
+}
+
+/**
+ * Manual `pnpm migrate` / `migrate-with-keys`: everything boot does, but
+ * forced. Design/security docs are pushed regardless of `db-setup` records
+ * (parts recorded ahead of this build are still left alone), then notebook
+ * uiSpecs are walked and the marker raised unless `skipNotebooks`.
+ *
+ * Takes no startup lock, so do not run it against a cluster that is booting.
+ * Throws on any failure, including a notebook walk that did not complete.
+ */
+export async function runManualMigration({
+  pushKeys,
+  skipNotebooks = false,
+}: {
+  pushKeys: boolean;
+  skipNotebooks?: boolean;
+}): Promise<void> {
+  const instanceId = createStartupInstanceId();
+  logStartupMigration('manual_migrate_begin', {
     instance: instanceId,
+    pushKeys,
+    skipNotebooks,
   });
-  await recordNotebookSchemaMarker(instanceId, fingerprint);
+  await initialiseAndMigrateDBs({
+    force: true,
+    forceSetup: true,
+    pushKeys,
+    setupDiagnostics: {
+      apiVersion: config.apiVersion,
+      writerId: instanceId,
+    },
+  });
+  logStartupMigration('db_migrate_complete', {instance: instanceId});
+
+  if (skipNotebooks) {
+    logStartupMigration('notebook_migrate_skipped', {instance: instanceId});
+    return;
+  }
+  if (!(await runNotebookWalk(instanceId))) {
+    throw new Error(
+      'Notebook uiSpec walk did not complete; see [notebook-startup] logs'
+    );
+  }
 }
 
 /**
