@@ -43,7 +43,11 @@ import {
 import {useDeviceHeading} from '../../hooks/useDeviceHeading';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
-import {CompassReference, displayHeadingDegrees} from './heading';
+import {
+  CompassReference,
+  displayHeadingDegrees,
+  isFiniteHeading,
+} from './heading';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
 import {magneticDeclination} from './magneticDeclination';
@@ -85,6 +89,10 @@ const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
 const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
+// Ignore unreliable GPS course at very low speeds.
+// Retain the last accepted heading while moving slowly or stationary.
+// m/s
+const GPS_HEADING_MIN_SPEED_MPS = 0.5;
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
 
@@ -277,6 +285,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
     },
     []
   );
+
+  // Starts the compass handling logic, and retrieves the requestWebPermission function
   const {requestWebPermission} = useDeviceHeading(handleHeadingChange);
 
   const hasInitialisedViewRef = useRef(false);
@@ -559,6 +569,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
     let lastMapCoords: [number, number] | null = null;
     let magneticDeclinationDeg: number | undefined;
     let headingRadians = 0;
+    let lastReliableGpsHeading: number | null = null;
+    let displayedHeadingDeg: number | null = null;
 
     const triangleImage = new RegularShape({
       points: 3,
@@ -592,24 +604,28 @@ const MapComponentImpl = (props: MapComponentProps) => {
       const coords = lastMapCoords;
       const headingDeg = displayHeadingDegrees({
         compass: compassHeadingRef.current,
-        gps: liveLocationRef.current?.coords.heading,
+        gps: lastReliableGpsHeading,
         compassReference: compassReferenceRef.current,
         latitude: liveLocationRef.current?.coords.latitude,
         longitude: liveLocationRef.current?.coords.longitude,
         magneticDeclinationDeg,
       });
 
-      // Nothing to attach the triangle to until we have a GPS fix, even if
-      // the compass is already running.
+      // Wait for a GPS position and the first valid heading.
+      // If heading becomes unavailable later, retain the last displayed direction
       if (!coords || headingDeg == null) {
-        triangleFeature.setStyle([]);
+        return;
+      }
+
+      // Avoid unnecessary updates when the bearing is unchanged.
+      if (headingDeg === displayedHeadingDeg) {
         return;
       }
 
       headingRadians = (headingDeg * Math.PI) / 180;
-      // Reuse these objects instead of allocating a new style for each sample.
       triangleImage.setRotation(headingRadians + Math.PI);
       triangleFeature.setStyle(triangleStyle);
+      displayedHeadingDeg = headingDeg;
     };
 
     /**
@@ -622,24 +638,32 @@ const MapComponentImpl = (props: MapComponentProps) => {
         theMap.getView().getProjection()
       ) as [number, number];
       lastMapCoords = coords;
+
+      // Keep both features anchored to the live GPS position. OpenLayers uses
+      // the feature geometry for spatial indexing and visibility checks; the
+      // triangle style applies its screen-sized heading offset separately.
+      dotFeature.setGeometry(new Point(coords));
+      triangleFeature.setGeometry(new Point(coords));
+
       // Declination changes with location, so compute it on GPS updates only.
       magneticDeclinationDeg = magneticDeclination(
         position.coords.latitude,
         position.coords.longitude
       );
 
-      // Update the blue dot position.
-      dotFeature.setGeometry(new Point(coords));
-      dotFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: 14,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#A19F9FFF', width: 3}),
-          }),
-        })
-      );
+      const {heading, speed} = position.coords;
+      if (
+        speed != null &&
+        Number.isFinite(speed) &&
+        speed >= GPS_HEADING_MIN_SPEED_MPS &&
+        isFiniteHeading(heading)
+      ) {
+        // Keep the last course while stationary; GPS direction is noisy at low speed.
+        lastReliableGpsHeading = heading;
+      }
 
+      // Reuse the existing marker styles; compass updates only change the
+      // triangle rotation, without recreating the blue-dot style.
       updateHeadingTriangle();
 
       // Update the accuracy circle position and size.

@@ -14,6 +14,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {MapComponent} from './MapComponent';
+import {GPS_CURSOR_LAYER_Z_INDEX} from './layerStack';
 import {MapConfig} from './types';
 
 const headingState = vi.hoisted(() => ({
@@ -102,14 +103,26 @@ const SYDNEY: Position = {
     altitude: null,
     altitudeAccuracy: null,
     heading: 45,
-    speed: null,
+    speed: 1.5,
   },
 };
+
+/** Create a GPS sample with a chosen course and speed. */
+function gpsSample(heading: number | null, speed: number | null): Position {
+  return {
+    ...SYDNEY,
+    timestamp: Date.now(),
+    coords: {...SYDNEY.coords, heading, speed},
+  };
+}
 
 /** Find the three-point heading marker image in the map's live-cursor layer. */
 function headingTriangle(map: Map): RegularShape | undefined {
   for (const layer of map.getLayers().getArray()) {
-    if (layer.getZIndex() !== 999 || !(layer instanceof VectorLayer)) {
+    if (
+      layer.getZIndex() !== GPS_CURSOR_LAYER_Z_INDEX ||
+      !(layer instanceof VectorLayer)
+    ) {
       continue;
     }
     const source = layer.getSource() as VectorSource | null;
@@ -180,6 +193,7 @@ describe('MapComponent heading', () => {
         reference: 'true',
       });
       watchState.callback?.(SYDNEY);
+      watchState.callback?.(gpsSample(180, 2));
     });
 
     const triangle = headingTriangle(map);
@@ -225,6 +239,157 @@ describe('MapComponent heading', () => {
     const triangle = headingTriangle(map);
     expect(triangle).toBeDefined();
     expect(triangle!.getRotation()).toBeCloseTo((45 * Math.PI) / 180 + Math.PI);
+  });
+
+  it('gives a newly available compass heading priority over GPS course', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(180, 1.5));
+    });
+    const triangle = headingTriangle(map);
+    expect(triangle).toBeDefined();
+    expect(triangle!.getRotation()).toBeCloseTo(
+      (180 * Math.PI) / 180 + Math.PI
+    );
+
+    act(() => {
+      headingState.onHeadingChange?.({
+        headingDeg: 90,
+        source: 'compass',
+        reference: 'true',
+      });
+    });
+
+    expect(headingTriangle(map)).toBe(triangle);
+    expect(triangle!.getRotation()).toBeCloseTo((90 * Math.PI) / 180 + Math.PI);
+  });
+
+  it('updates GPS course while moving and retains it at low speed', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(45, 1.5));
+    });
+
+    const triangle = headingTriangle(map);
+    expect(triangle).toBeDefined();
+    expect(triangle!.getRotation()).toBeCloseTo((45 * Math.PI) / 180 + Math.PI);
+
+    await act(async () => {
+      watchState.callback?.(gpsSample(120, 0));
+      watchState.callback?.(gpsSample(200, 0.4));
+    });
+
+    expect(headingTriangle(map)).toBe(triangle);
+    expect(triangle!.getRotation()).toBeCloseTo((45 * Math.PI) / 180 + Math.PI);
+  });
+
+  it('accepts GPS course at the 0.5 m/s speed threshold', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(90, 0.5));
+    });
+
+    const triangle = headingTriangle(map);
+    expect(triangle).toBeDefined();
+    expect(triangle!.getRotation()).toBeCloseTo((90 * Math.PI) / 180 + Math.PI);
+  });
+
+  it('ignores GPS course when speed is unavailable', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(90, null));
+    });
+
+    expect(headingTriangle(map)).toBeUndefined();
+  });
+
+  it('keeps the last GPS course visible after stopping and updates when movement resumes', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(45, 1.5));
+    });
+
+    const triangle = headingTriangle(map);
+    expect(triangle).toBeDefined();
+
+    await act(async () => {
+      watchState.callback?.(gpsSample(270, 0));
+    });
+    expect(headingTriangle(map)).toBe(triangle);
+    expect(triangle!.getRotation()).toBeCloseTo((45 * Math.PI) / 180 + Math.PI);
+
+    await act(async () => {
+      watchState.callback?.(gpsSample(135, 1.6));
+    });
+    expect(headingTriangle(map)).toBe(triangle);
+    expect(triangle!.getRotation()).toBeCloseTo(
+      (135 * Math.PI) / 180 + Math.PI
+    );
+  });
+
+  it('keeps the triangle hidden until a valid compass or moving GPS heading arrives', async () => {
+    headingState.headingDeg = null;
+    headingState.source = null;
+    headingState.reference = null;
+
+    const map = await renderMap();
+    await act(async () => {
+      watchState.callback?.(gpsSample(null, 1.5));
+      watchState.callback?.(gpsSample(90, 0.4));
+    });
+    expect(headingTriangle(map)).toBeUndefined();
+
+    await act(async () => {
+      watchState.callback?.(gpsSample(90, 1.5));
+    });
+    expect(headingTriangle(map)).toBeDefined();
+  });
+
+  it('retains the last displayed heading when all heading sources become unavailable', async () => {
+    const map = await renderMap();
+
+    await act(async () => {
+      watchState.callback?.(gpsSample(null, 0));
+      headingState.onHeadingChange?.({
+        headingDeg: 90,
+        source: 'compass',
+        reference: 'true',
+      });
+    });
+
+    const triangle = headingTriangle(map);
+    expect(triangle).toBeDefined();
+
+    act(() => {
+      headingState.onHeadingChange?.({
+        headingDeg: null,
+        source: null,
+        reference: null,
+      });
+    });
+
+    expect(headingTriangle(map)).toBe(triangle);
+    expect(triangle!.getRotation()).toBeCloseTo((90 * Math.PI) / 180 + Math.PI);
   });
 
   it('hides the triangle until a GPS fix arrives', async () => {

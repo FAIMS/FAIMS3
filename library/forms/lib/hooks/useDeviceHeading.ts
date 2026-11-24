@@ -34,6 +34,7 @@ import {
   headingFromDeviceOrientation,
   screenOrientationAngle,
 } from '../components/maps/webHeading';
+import {getAndroidCompassSensorAvailability} from '../native/androidCompassSensors';
 import {logWarn} from '../logging';
 
 // Clear Android compass data after this long without a valid sensor update.
@@ -76,10 +77,43 @@ interface NativeCompassSession {
  * sensor session, and so unmount during `startListening()` still stops it.
  */
 const nativeHeadingListeners = new Set<NativeHeadingListener>();
-let nativeStartPromise: Promise<NativeCompassSession> | null = null;
+let nativeStartPromise: Promise<NativeCompassSession | null> | null = null;
+let androidSensorAvailabilityPromise: ReturnType<
+  typeof getAndroidCompassSensorAvailability
+> | null = null;
 
 /** Check access, start Capgo's shared sensor listener, and return its handle. */
-async function startNativeCompassSession(): Promise<NativeCompassSession> {
+async function startNativeCompassSession(): Promise<NativeCompassSession | null> {
+  if (Capacitor.getPlatform() === 'android') {
+    // Capgo can produce plausible readings without a magnetometer, so check
+    // the actual hardware before treating its output as a compass heading.
+    androidSensorAvailabilityPromise ??= getAndroidCompassSensorAvailability();
+
+    try {
+      const availability = await androidSensorAvailabilityPromise;
+      const missingSensors: string[] = [];
+      if (!availability.accelerometerAvailable) {
+        missingSensors.push('accelerometer');
+      }
+      if (!availability.magneticFieldAvailable) {
+        missingSensors.push('magnetometer');
+      }
+      if (missingSensors.length > 0) {
+        logWarn(
+          `Android compass unavailable; missing ${missingSensors.join(' and ')}. Using GPS course-over-ground.`
+        );
+        return null;
+      }
+    } catch (error) {
+      // A failed bridge check does not confirm missing hardware; retain the
+      // existing Capgo startup path and report the check failure separately.
+      logWarn(
+        'Failed to check Android compass sensor availability; continuing with Capgo Compass:',
+        error
+      );
+    }
+  }
+
   // Request access only when the platform reports a prompt state.
   const current = await CapgoCompass.checkPermissions();
   if (
@@ -137,13 +171,20 @@ async function subscribeNativeHeading(
     if (!pending) {
       return;
     }
-    let handle: NativeCompassSession;
+
+    let handle: NativeCompassSession | null;
+
     try {
       handle = await pending;
     } catch {
       // Session never started; nothing to stop.
       return;
     }
+
+    if (!handle) {
+      return;
+    }
+
     await handle.remove();
     await CapgoCompass.stopListening();
   };
@@ -162,6 +203,7 @@ async function subscribeNativeHeading(
 export function resetNativeCompassForTests(): void {
   nativeHeadingListeners.clear();
   nativeStartPromise = null;
+  androidSensorAvailabilityPromise = null;
 }
 
 /**

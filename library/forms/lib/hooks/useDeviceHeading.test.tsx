@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   stopListening: vi.fn(),
   checkPermissions: vi.fn(),
   requestPermissions: vi.fn(),
+  getAndroidCompassSensorAvailability: vi.fn(),
   logWarn: vi.fn(),
 }));
 
@@ -37,6 +38,12 @@ vi.mock('../logging', () => ({
   logWarn: (...args: unknown[]) => mocks.logWarn(...args),
 }));
 
+vi.mock('../native/androidCompassSensors', () => ({
+  getAndroidCompassSensorAvailability:
+    mocks.getAndroidCompassSensorAvailability,
+}));
+
+import {displayHeadingDegrees} from '../components/maps/heading';
 import {
   ANDROID_HEADING_STALE_AFTER_MS,
   resetNativeCompassForTests,
@@ -80,6 +87,11 @@ describe('useDeviceHeading', () => {
     mocks.stopListening.mockReset();
     mocks.checkPermissions.mockReset();
     mocks.requestPermissions.mockReset();
+    mocks.getAndroidCompassSensorAvailability.mockReset();
+    mocks.getAndroidCompassSensorAvailability.mockResolvedValue({
+      accelerometerAvailable: true,
+      magneticFieldAvailable: true,
+    });
     mocks.logWarn.mockReset();
   });
 
@@ -122,6 +134,82 @@ describe('useDeviceHeading', () => {
       expect.any(Function)
     );
     expect(mocks.startListening).toHaveBeenCalled();
+  });
+
+  it('starts Capgo when Android reports both required sensors', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    mockGrantedNativeListener();
+
+    renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.getAndroidCompassSensorAvailability).toHaveBeenCalledTimes(1);
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips Capgo when Android confirms a required sensor is missing', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    mocks.getAndroidCompassSensorAvailability.mockResolvedValue({
+      accelerometerAvailable: true,
+      magneticFieldAvailable: false,
+    });
+
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.checkPermissions).not.toHaveBeenCalled();
+    expect(mocks.addListener).not.toHaveBeenCalled();
+    expect(mocks.startListening).not.toHaveBeenCalled();
+    expect(result.current.headingDeg).toBeNull();
+    expect(result.current.source).toBeNull();
+    expect(mocks.logWarn).toHaveBeenCalledWith(
+      'Android compass unavailable; missing magnetometer. Using GPS course-over-ground.'
+    );
+  });
+
+  it('skips Capgo when Android has no accelerometer', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    mocks.getAndroidCompassSensorAvailability.mockResolvedValue({
+      accelerometerAvailable: false,
+      magneticFieldAvailable: true,
+    });
+
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.getAndroidCompassSensorAvailability).toHaveBeenCalledTimes(1);
+    expect(mocks.checkPermissions).not.toHaveBeenCalled();
+    expect(mocks.addListener).not.toHaveBeenCalled();
+    expect(mocks.startListening).not.toHaveBeenCalled();
+    expect(result.current.headingDeg).toBeNull();
+    expect(result.current.source).toBeNull();
+  });
+
+  it('logs a failed Android capability check and continues with Capgo', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    mockGrantedNativeListener();
+    const checkError = new Error('native bridge unavailable');
+    mocks.getAndroidCompassSensorAvailability.mockRejectedValue(checkError);
+
+    renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
+    expect(mocks.logWarn).toHaveBeenCalledWith(
+      'Failed to check Android compass sensor availability; continuing with Capgo Compass:',
+      checkError
+    );
+  });
+
+  it('does not check Android sensors on iOS', async () => {
+    mocks.getPlatform.mockReturnValue('ios');
+    mockGrantedNativeListener();
+
+    renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    expect(mocks.getAndroidCompassSensorAvailability).not.toHaveBeenCalled();
+    expect(mocks.startListening).toHaveBeenCalledTimes(1);
   });
 
   it('prompts for native permission when the plugin reports prompt', async () => {
@@ -228,6 +316,24 @@ describe('useDeviceHeading', () => {
     });
 
     expect(result.current.headingDeg).toBe(77);
+    expect(result.current.source).toBe('compass');
+    expect(result.current.reference).toBe('magnetic');
+  });
+
+  it('keeps a valid stationary Android heading when repeated at 270 degrees', async () => {
+    mocks.getPlatform.mockReturnValue('android');
+    const {listener} = mockGrantedNativeListener();
+
+    const {result} = renderHook(() => useDeviceHeading());
+    await flushNativeStart();
+
+    act(() => {
+      listener.current?.({value: 270}); // Android warm-up sample
+      listener.current?.({value: 270});
+      listener.current?.({value: 270});
+    });
+
+    expect(result.current.headingDeg).toBe(270);
     expect(result.current.source).toBe('compass');
     expect(result.current.reference).toBe('magnetic');
   });
@@ -346,6 +452,7 @@ describe('useDeviceHeading', () => {
     const second = renderHook(() => useDeviceHeading());
     await flushNativeStart();
 
+    expect(mocks.getAndroidCompassSensorAvailability).toHaveBeenCalledTimes(1);
     expect(mocks.startListening).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -462,5 +569,20 @@ describe('useDeviceHeading', () => {
     });
 
     expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('uses GPS course when compass heading is unavailable', () => {
+    // Missing Android compass hardware leaves compass heading null. The map's
+    // existing heading selector should then use the GPS course (true north).
+    expect(
+      displayHeadingDegrees({
+        compass: null,
+        gps: 90,
+        compassReference: null,
+        latitude: -35,
+        longitude: 149,
+        magneticDeclinationDeg: 12,
+      })
+    ).toBe(90);
   });
 });
