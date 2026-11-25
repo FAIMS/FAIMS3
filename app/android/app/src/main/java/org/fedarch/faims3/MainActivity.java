@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
   public void onCreate(Bundle savedInstanceState) {
     // Before super.onCreate: BridgeActivity registers plugins while loading.
     registerPlugin(MapFileRangePlugin.class);
+    registerPlugin(AndroidCompassSensorsPlugin.class);
     super.onCreate(savedInstanceState);
     EdgeToEdge.enable(this);
     WebView.setWebContentsDebuggingEnabled(true);

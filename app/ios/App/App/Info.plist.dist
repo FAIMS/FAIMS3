@@ -38,7 +38,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>To scan QR codes and to allow you to add photos or videos to your form inputs.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>To allow GPS position data to be added to the data you are collecting</string>
+	<string>To allow GPS position and compass heading on maps, and to add location data to the records you are collecting.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>To capture audio recordings as part of your data collection activity.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -46,7 +46,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>To select photos from your library to add to your data collection.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>To monitor GPS position to show live location on maps.</string>
+	<string>To monitor GPS position and compass heading on maps.</string>
   <key>NSSpeechRecognitionUsageDescription</key>
   <string>We need access to speech recognition to transcribe your voice</string>
   <key>NSMicrophoneUsageDescription</key>

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/*
 /**
  * MapComponent.tsx
  * This component renders an interactive OpenLayers map with support for:
- * - Real-time GPS tracking (blue dot, accuracy circle, direction triangle)
+ * - Real-time GPS tracking (blue dot, accuracy circle)
+ * - Device-compass bearing triangle (GPS course-over-ground as fallback)
  * - Offline map support using cached tiles
  * - Dynamic center control and zooming
  * - Integration with parent component through callback
@@ -39,10 +39,17 @@ import {
   useRef,
   useState,
 } from 'react';
+import {useDeviceHeading} from '../../hooks/useDeviceHeading';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {logWarn} from '../../logging';
+import {
+  CompassReference,
+  displayHeadingDegrees,
+  isFiniteHeading,
+} from './heading';
 import {headingIndicatorCoordinate} from './headingIndicator';
 import {loadLastLocation, saveLastLocation} from './lastKnownLocation';
+import {magneticDeclination} from './magneticDeclination';
 import {mapAttributionSx} from './mapAttributionSx';
 import {topVisibleAttribution} from './mapHelpers';
 import {useIsOnline} from './useIsOnline';
@@ -79,8 +86,9 @@ import {createTileStore} from './tileDB/TileStore';
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
-
 const MAP_VIEW_FIT_PADDING_PX = [24, 24, 24, 24];
+// Minimum speed (m/s) required to use GPS course as a heading fallback.
+const GPS_HEADING_MIN_SPEED_MPS = 0.5;
 // fallback to Sydney
 const FALLBACK_MAP_CENTER: [number, number] = [151.2093, -33.8688];
 
@@ -243,6 +251,39 @@ const MapComponentImpl = (props: MapComponentProps) => {
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
+  // Keep sensor updates out of React state so each reading does not rerender the map.
+  // Refs let createLiveCursorFeatures (captured once) read the latest sample.
+  const compassHeadingRef = useRef<number | null>(null);
+  const compassReferenceRef = useRef<CompassReference | null>(null);
+  const liveCursorRef = useRef<{
+    // Update the live marker from a GPS fix.
+    updateCursorLocation: (position: Position) => void;
+    // Resize the accuracy circle after a fix or zoom change.
+    updateCursorAccuracy: (accuracy: number) => void;
+    // Redraw the bearing triangle from the latest compass/GPS values.
+    updateHeadingTriangle: () => void;
+  } | null>(null);
+
+  /** Update map refs and redraw the triangle for each compass sample. */
+  const handleHeadingChange = useCallback(
+    ({
+      headingDeg,
+      reference,
+    }: {
+      // Current smoothed compass bearing, or null when it is unavailable.
+      headingDeg: number | null;
+      // Whether the bearing is relative to true or magnetic north.
+      reference: CompassReference | null;
+    }) => {
+      compassHeadingRef.current = headingDeg;
+      compassReferenceRef.current = reference;
+      liveCursorRef.current?.updateHeadingTriangle();
+    },
+    []
+  );
+
+  // Starts the compass handling logic, and retrieves the requestWebPermission function
+  const {requestWebPermission} = useDeviceHeading(handleHeadingChange);
 
   const hasInitialisedViewRef = useRef(false);
   const hasHandledFirstCurrentLocationRef = useRef(false);
@@ -286,6 +327,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
 
     // create the live cursor layer
     const liveCursor = createLiveCursorFeatures(theMap);
+    liveCursorRef.current = liveCursor;
 
     // Handle zoom events, keep track of the zoom level and
     // redraw the live cursor accuracy circle
@@ -311,6 +353,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
     // - Web: `minimumUpdateInterval` is ignored. `timeout` is the browser's
     //   max wait for a fix, not an interval; the browser chooses the rate.
     // `coords.heading` is GPS course-over-ground and only changes with a fix.
+    // The bearing triangle prefers the device compass and uses GPS as fallback.
     Geolocation.watchPosition(
       {
         enableHighAccuracy: true,
@@ -319,6 +362,10 @@ const MapComponentImpl = (props: MapComponentProps) => {
         minimumUpdateInterval: 1000,
       },
       (position, err) => {
+        if (!mapMountedRef.current) {
+          return;
+        }
+
         if (err) {
           logWarn('Geolocation error:', err.message || err);
           setLocationAvailable(false);
@@ -335,9 +382,21 @@ const MapComponentImpl = (props: MapComponentProps) => {
           setLocationAvailable(true);
         }
       }
-    ).then(id => {
-      watchIdRef.current = id;
-    });
+    )
+      .then(id => {
+        if (!mapMountedRef.current) {
+          void Geolocation.clearWatch({id}).catch(error =>
+            logWarn('Failed to clear GPS watch on unmount:', error)
+          );
+          return;
+        }
+
+        watchIdRef.current = id;
+      })
+      .catch(error => {
+        logWarn('Failed to start GPS watch:', error);
+      });
+
     return theMap;
   }, []);
 
@@ -476,8 +535,12 @@ const MapComponentImpl = (props: MapComponentProps) => {
     );
   }, [map, currentPosition, autoFlyToCurrentLocation]);
 
-  // Create a layer to show the live cursor, return functions
-  // that can be used to update the cursor location and accuracy
+  /**
+   * Create the live GPS overlay and its independent GPS/compass update handlers.
+   *
+   * @param theMap - Map that owns the overlay layer.
+   * @returns Updaters for GPS position, accuracy, and heading changes.
+   */
   const createLiveCursorFeatures = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
@@ -510,65 +573,121 @@ const MapComponentImpl = (props: MapComponentProps) => {
       })
     );
     const triangleFeature = new Feature(new Point([0, 0]));
+    // An empty style array hides the feature without using the layer's default style.
+    triangleFeature.setStyle([]);
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
 
-    // function to update the cursor location when we move
+    // Last projected GPS position. Compass ticks reuse this so the triangle
+    // can move without waiting for the next watchPosition callback.
+    let lastMapCoords: [number, number] | null = null;
+    let magneticDeclinationDeg: number | undefined;
+    let headingRadians = 0;
+    let reliableGpsHeading: number | null = null;
+    let displayedHeadingDeg: number | null = null;
+
+    const triangleImage = new RegularShape({
+      points: 3,
+      radius: 12,
+      // angle PI draws one point facing down; add PI so heading 0 points north.
+      rotation: Math.PI,
+      // Default is screen-fixed, which leaves the marker pointing the
+      // same way after the user rotates the map.
+      rotateWithView: true,
+      angle: Math.PI,
+      fill: new Fill({color: '#1a73e8'}),
+      stroke: new Stroke({color: 'white', width: 2}),
+    });
+
+    const triangleStyle = new Style({
+      image: triangleImage,
+      geometry: () => {
+        const coords = lastMapCoords;
+        if (!coords) {
+          return new Point([0, 0]);
+        }
+        const resolution = theMap.getView().getResolution() ?? 1;
+        return new Point(
+          headingIndicatorCoordinate(coords, headingRadians, resolution)
+        );
+      },
+    });
+
+    /** Resolve the current bearing and update the map marker. */
+    const updateHeadingTriangle = () => {
+      const coords = lastMapCoords;
+      const headingDeg = displayHeadingDegrees({
+        compass: compassHeadingRef.current,
+        gps: reliableGpsHeading,
+        compassReference: compassReferenceRef.current,
+        latitude: liveLocationRef.current?.coords.latitude,
+        longitude: liveLocationRef.current?.coords.longitude,
+        magneticDeclinationDeg,
+      });
+
+      // Hide the triangle when neither compass nor GPS provides a usable bearing.
+      if (!coords || headingDeg == null) {
+        if (displayedHeadingDeg !== null) {
+          triangleFeature.setStyle([]);
+          // Resetting to null also ensures the triangle reappears when a valid heading
+          // becomes available, even if it is the same bearing as before.
+          displayedHeadingDeg = null;
+        }
+        return;
+      }
+
+      // Avoid unnecessary updates when the bearing is unchanged.
+      if (headingDeg === displayedHeadingDeg) {
+        return;
+      }
+
+      headingRadians = (headingDeg * Math.PI) / 180;
+      triangleImage.setRotation(headingRadians + Math.PI);
+      triangleFeature.setStyle(triangleStyle);
+      displayedHeadingDeg = headingDeg;
+    };
+
+    /**
+     * Update the GPS position, declination, heading marker, and accuracy circle.
+     */
     const updateCursorLocation = (position: Position) => {
       const coords = transform(
         [position.coords.longitude, position.coords.latitude],
         'EPSG:4326',
         theMap.getView().getProjection()
-      );
+      ) as [number, number];
+      lastMapCoords = coords;
 
-      // set the location of the blue dot marking our position
+      // Keep both features anchored to the live GPS position. OpenLayers uses
+      // the feature geometry for spatial indexing and visibility checks; the
+      // triangle style applies its screen-sized heading offset separately.
       dotFeature.setGeometry(new Point(coords));
-      dotFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: 14,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#A19F9FFF', width: 3}),
-          }),
-        })
+      triangleFeature.setGeometry(new Point(coords));
+
+      // Declination changes with location, so compute it on GPS updates only.
+      magneticDeclinationDeg = magneticDeclination(
+        position.coords.latitude,
+        position.coords.longitude
       );
 
-      // Heading triangle. 0 is north and is a real bearing, so don't treat it
-      // as missing. A null heading means the device is not reporting direction.
-      if (typeof position.coords.heading === 'number') {
-        const headingRadians = (position.coords.heading * Math.PI) / 180;
-        triangleFeature.setGeometry(new Point(coords));
-        triangleFeature.setStyle(
-          new Style({
-            image: new RegularShape({
-              points: 3,
-              radius: 12,
-              // angle PI draws one point facing down; add PI so heading 0 points north.
-              rotation: headingRadians + Math.PI,
-              // Default is screen-fixed, which leaves the marker pointing the
-              // same way after the user rotates the map.
-              rotateWithView: true,
-              angle: Math.PI,
-              fill: new Fill({color: '#1a73e8'}),
-              stroke: new Stroke({color: 'white', width: 2}),
-            }),
-            geometry: () => {
-              const resolution = theMap.getView().getResolution() ?? 1;
-              return new Point(
-                headingIndicatorCoordinate(
-                  coords as [number, number],
-                  headingRadians,
-                  resolution
-                )
-              );
-            },
-          })
-        );
+      const {heading, speed} = position.coords;
+      if (
+        speed != null &&
+        Number.isFinite(speed) &&
+        speed >= GPS_HEADING_MIN_SPEED_MPS &&
+        isFiniteHeading(heading)
+      ) {
+        reliableGpsHeading = heading;
       } else {
-        triangleFeature.setStyle([]);
+        // Do not present an old course as the current direction while stationary.
+        reliableGpsHeading = null;
       }
 
-      // set the location of the accuracy circle
+      // Reuse the existing marker styles; compass updates only change the
+      // triangle rotation, without recreating the blue-dot style.
+      updateHeadingTriangle();
+
+      // Update the accuracy circle position and size.
       accuracyFeature.setGeometry(new Point(coords));
       updateCursorAccuracy(position.coords.accuracy);
     };
@@ -588,7 +707,7 @@ const MapComponentImpl = (props: MapComponentProps) => {
       );
     };
 
-    return {updateCursorLocation, updateCursorAccuracy};
+    return {updateCursorLocation, updateCursorAccuracy, updateHeadingTriangle};
   };
 
   // Center the map on the current location
@@ -701,6 +820,8 @@ const MapComponentImpl = (props: MapComponentProps) => {
       <Box sx={{position: 'relative', flex: 1, minHeight: 0, width: '100%'}}>
         <Box
           ref={refCallback} // will create the map
+          // iOS Safari DeviceOrientationEvent.requestPermission needs a gesture.
+          onPointerDown={requestWebPermission}
           sx={{
             height: '100%',
             width: '100%',
