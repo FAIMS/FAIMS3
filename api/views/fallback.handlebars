@@ -5,15 +5,21 @@
 
 <p>COUCHDB URL: <a href="{{couchdb_url}}">{{couchdb_url}}</a></p>
 
-{{#if report.server_msg}}
- <p>{{report.server_msg}}</p>
-{{else}}
+{{#if canReachServer}}
   <p>Able to connect to database server.</p>
 
-  {{#if report.database_errors}}
+  {{#if missingDatabases.length}}
   <ul>
-  {{#each report.database_errors}}
-  <li>{{this}}</li>
+  {{#each missingDatabases}}
+  <li>Database {{this}} not found</li>
+  {{/each}}
+  </ul>
+  {{/if}}
+
+  {{#if unreachableDatabases.length}}
+  <ul>
+  {{#each unreachableDatabases}}
+  <li>Unable to connect to database {{this}}</li>
   {{/each}}
   </ul>
   {{/if}}
@@ -22,4 +28,6 @@
     <input type="submit" value="Run Database Initialisation">
   </form>
   
+{{else}}
+  <p>Unable to connect to the database server.</p>
 {{/if}}

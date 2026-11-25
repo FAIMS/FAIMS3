@@ -100,6 +100,16 @@ const pouchOptions = () => {
 
 export type CouchDBConnectionResult = {
   valid: boolean;
+  /**
+   * HEAD to Couch succeeded. GET `/` uses this instead of interpolating
+   * {@link server_msg}, which may include the internal Couch URL.
+   */
+  canReachServer: boolean;
+  /** Required DB names that returned not_found. */
+  missingDatabases: string[];
+  /** Required DB names whose info() call threw. */
+  unreachableDatabases: string[];
+  /** Operator diagnostic; may include the internal Couch URL. */
   server_msg?: string;
   database_errors?: string[];
   validate_error?: string;
@@ -107,69 +117,20 @@ export type CouchDBConnectionResult = {
 
 export const databaseValidityReport: CouchDBConnectionResult = {
   valid: true,
+  canReachServer: true,
+  missingDatabases: [],
+  unreachableDatabases: [],
   server_msg: '',
   database_errors: [],
   validate_error: '',
 };
 
-/**
- * Replace the in-VPC Couch URL/hostname in operator-facing text so the
- * unauthenticated fallback page never shows `couchdb.internal.*`.
- * `verifyCouchDBConnection` still records the real URL for logs and CLI.
- */
-export function redactInternalCouchHost(text: string): string {
-  const internalUrl = config.couchdbInternalUrl;
-  const publicUrl = config.couchdbPublicUrl;
-  if (!internalUrl || internalUrl === publicUrl) {
-    return text;
-  }
-
-  let redacted = text.split(internalUrl).join(publicUrl);
-  try {
-    const internal = new URL(internalUrl);
-    let publicHost = 'CouchDB';
-    let publicAuthority = 'CouchDB';
-    try {
-      const published = new URL(publicUrl);
-      publicHost = published.hostname;
-      publicAuthority = published.host;
-    } catch {
-      // Keep the generic stand-in when the public URL is not parseable.
-    }
-    if (internal.host && internal.host !== internal.hostname) {
-      redacted = redacted.split(internal.host).join(publicAuthority);
-    }
-    if (internal.hostname) {
-      redacted = redacted.split(internal.hostname).join(publicHost);
-    }
-  } catch {
-    // Ignore unparseable internal URLs; the full-URL replace above still runs.
-  }
-  return redacted;
-}
-
-/**
- * Copy of {@link CouchDBConnectionResult} safe to interpolate into GET `/`
- * fallback HTML. Does not mutate {@link databaseValidityReport}.
- */
-export function publicFacingDatabaseReport(
-  report: CouchDBConnectionResult
-): CouchDBConnectionResult {
-  return {
-    valid: report.valid,
-    server_msg: report.server_msg
-      ? redactInternalCouchHost(report.server_msg)
-      : report.server_msg,
-    validate_error: report.validate_error
-      ? redactInternalCouchHost(report.validate_error)
-      : report.validate_error,
-    database_errors: report.database_errors?.map(redactInternalCouchHost),
-  };
-}
-
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
   result.valid = true;
+  result.canReachServer = true;
+  result.missingDatabases = [];
+  result.unreachableDatabases = [];
   result.server_msg = '';
   result.database_errors = [];
   result.validate_error = '';
@@ -188,6 +149,7 @@ export const verifyCouchDBConnection = async () => {
 
   if (!response) {
     result.valid = false;
+    result.canReachServer = false;
     result.server_msg =
       `Unable to connect to CouchDB server at ${url}` +
       (result.server_msg ? ` (${result.server_msg})` : '');
@@ -210,10 +172,12 @@ export const verifyCouchDBConnection = async () => {
       const info = (await dbInstance.info()) as any; // type does not include error
       if (info.error === 'not_found') {
         result.valid = false;
+        result.missingDatabases.push(db);
         result.database_errors?.push(`Database ${db} not found`);
       }
     } catch (error: unknown) {
       result.valid = false;
+      result.unreachableDatabases.push(db);
       const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
         `Unable to connect to CouchDB database ${db}: ${detail}`

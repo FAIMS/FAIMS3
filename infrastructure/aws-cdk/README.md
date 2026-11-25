@@ -41,7 +41,7 @@ The `FaimsConductor` construct sets up the API service:
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
 - **DNS**: Creates a custom domain for the Conductor API.
-- **Couch access**: Admin-credentialed Nano/Pouch/migrate/worker calls stay inside the VPC on :5984. They must not hairpin through the public ALB. The unauthenticated Conductor `/` fallback page renders `COUCHDB_PUBLIC_URL`, never the internal hostname.
+- **Couch access**: Admin-credentialed Nano/Pouch/migrate/worker calls stay inside the VPC on :5984. They must not hairpin through the public ALB. The unauthenticated Conductor `/` fallback page renders `COUCHDB_PUBLIC_URL` and public-safe status (reachable / missing databases), not operator diagnostics that include the VPC hostname.
 
 ### Frontend
 

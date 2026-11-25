@@ -29,7 +29,6 @@ import {isCorsOriginAllowed} from './corsAllowlist';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
-  publicFacingDatabaseReport,
   verifyCouchDBConnection,
 } from './couchdb';
 
@@ -283,7 +282,9 @@ export function attachFullApi(app: express.Express): void {
       res.redirect('/login');
     } else {
       res.render('fallback', {
-        report: publicFacingDatabaseReport(databaseValidityReport),
+        canReachServer: databaseValidityReport.canReachServer,
+        missingDatabases: databaseValidityReport.missingDatabases,
+        unreachableDatabases: databaseValidityReport.unreachableDatabases,
         couchdb_url: config.couchdbPublicUrl,
         layout: 'fallback',
       });
