@@ -124,13 +124,31 @@ stack name from `config/<env>/aws.json` (same as `stackName`).
 
 ### Local access to VPC-only Couch (couch auth proxy)
 
-**When** couch-auth-proxy is deployed (Couch no longer on the public ALB;
-[#2211](https://github.com/FAIMS/FAIMS3/pull/2211) — expected on `main` later),
-`env-from-cdk-stack` sets `COUCHDB_INTERNAL_URL` to a **VPC private** address.
-Laptop scripts (`dump-user-emails`, `migrate-with-keys`, baseline) cannot reach
-it directly.
+`env-from-cdk-stack` copies Conductor task env, so `COUCHDB_INTERNAL_URL` is
+the VPC hostname `http://couchdb.internal.<baseDomain>:5984`. Laptops cannot
+resolve that name.
 
-**Fix:** SSM port-forward Couch `:5984` to localhost, then point both
+**Today:** Couch is still on the public ALB. Laptop scripts
+(`dump-user-emails`, `migrate-with-keys`, baseline) can use that public
+endpoint the same way they did before. Manually set `COUCHDB_INTERNAL_URL` to
+the same value as `COUCHDB_PUBLIC_URL` (`https://db.<domain>:443`). Leave
+`COUCHDB_PUBLIC_URL` as the public hostname.
+
+```bash
+# api/.env — override the exported VPC hostname for laptop access
+COUCHDB_INTERNAL_URL=https://db.<your domain>:443
+
+# infrastructure/aws-cdk/scripts/.env (baseline / EC2 helpers)
+COUCH_URL=https://db.<your domain>:443
+```
+
+**When couch-auth-proxy is deployed** (Couch no longer on the public ALB;
+[#2211](https://github.com/FAIMS/FAIMS3/pull/2211) — expected on `main` later),
+the public URL is a proxy, not the Couch Conductor talks to. Laptop scripts
+must then reach the **internal** service (the same one the API uses), not the
+public proxy.
+
+**Fix then:** SSM port-forward Couch `:5984` to localhost, then point both
 `api/.env` and `scripts/.env` at the tunnel (leave `COUCHDB_PUBLIC_URL` as the
 public proxy hostname). Ensure `scripts/.env` has `STACK_NAME` (see Baseline
 below).
@@ -147,9 +165,6 @@ COUCHDB_INTERNAL_URL=http://127.0.0.1:5984
 # infrastructure/aws-cdk/scripts/.env (baseline / EC2 helpers)
 COUCH_URL=http://127.0.0.1:5984
 ```
-
-Until proxy lands on `main`, skip this if Couch is still reachable via the
-exported public/internal URL.
 
 ### Notify users
 

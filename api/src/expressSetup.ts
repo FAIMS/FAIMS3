@@ -282,8 +282,10 @@ export function attachFullApi(app: express.Express): void {
       res.redirect('/login');
     } else {
       res.render('fallback', {
-        report: databaseValidityReport,
-        couchdb_url: config.couchdbInternalUrl,
+        canReachServer: databaseValidityReport.canReachServer,
+        missingDatabases: databaseValidityReport.missingDatabases,
+        unreachableDatabases: databaseValidityReport.unreachableDatabases,
+        couchdb_url: config.couchdbPublicUrl,
         layout: 'fallback',
       });
     }
