@@ -826,22 +826,22 @@ cp .env.dist .env
 
 Then add the following values to the bottom of the .env file.
 
-In-VPC Conductor / worker tasks already get
-`COUCHDB_INTERNAL_URL=http://couchdb.internal.<baseDomain>:5984` from CDK
-(plain HTTP on 5984). That name only resolves inside the stack VPC, so a
-laptop migrate cannot use it. Port-forward Couch with
-`infrastructure/aws-cdk/scripts/ssmCouchTunnel.sh` and point the internal
-URL at localhost. Keep `COUCHDB_PUBLIC_URL` as the public ALB HTTPS URL
-(`https://db.<your domain>:443`) — that is what devices receive via
-`base_url`.
+In-VPC Conductor / worker tasks use
+`COUCHDB_INTERNAL_URL=http://couchdb.internal.<baseDomain>:5984`.
+`env-from-cdk-stack` copies that VPC hostname, which laptops cannot resolve.
+**Today** Couch is still on the public ALB, so a laptop migrate can use the
+public endpoint the same way this guide did before: set
+`COUCHDB_INTERNAL_URL` to the same value as `COUCHDB_PUBLIC_URL`. When
+[couch-auth-proxy](https://github.com/FAIMS/FAIMS3/pull/2211) lands, the
+public URL is a proxy — migrate must then reach the internal Couch (SSM
+tunnel; see [CouchDB backup recovery on AWS](./CouchBackupRecoveryGuideAWS.md)).
 
 ```sh
 # OVERRIDES
 COUCHDB_USER=admin
 COUCHDB_PASSWORD="<YOUR DB PASSWORD>"
 COUCHDB_EXTERNAL_PORT=443
-# Laptop access: SSM tunnel (VPC hostname is not resolvable off the stack VPC)
-COUCHDB_INTERNAL_URL=http://127.0.0.1:5984
+COUCHDB_INTERNAL_URL=https://db.<your domain>:443/
 COUCHDB_PUBLIC_URL=https://db.<your domain>:443/
 AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
 KEY_SOURCE=AWS_SM

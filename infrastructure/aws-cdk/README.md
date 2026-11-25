@@ -29,7 +29,7 @@ The `EC2CouchDB` construct deploys CouchDB:
 - **VPC-private DNS**: A Route 53 private hosted zone `internal.<baseDomain>` associated with the stack VPC, plus an A record `couchdb.internal.<baseDomain>` → the instance private IP. Backend tasks use `COUCHDB_INTERNAL_URL=http://couchdb.internal.<baseDomain>:5984` (plain HTTP on 5984; TLS already terminates at the ALB for the public hop).
 - **Instance ingress**: TCP 5984 from the shared ALB security group and from the Conductor task security group (shared by Conductor, spatial worker, capacity manager, and TTL cleanup). No `0.0.0.0/0` on 443 or 5984. `AmazonSSMManagedInstanceCore` stays on the instance role for `scripts/ssmCouchTunnel.sh`.
 
-Laptop processes cannot resolve `couchdb.internal.<baseDomain>`. After `env-from-cdk-stack.sh` copies ECS task env, point `COUCHDB_INTERNAL_URL` at an SSM tunnel (`scripts/ssmCouchTunnel.sh`, then `http://127.0.0.1:5984`). Leave `COUCHDB_PUBLIC_URL` as the public HTTPS hostname.
+Laptop processes cannot resolve `couchdb.internal.<baseDomain>`. After `env-from-cdk-stack.sh` copies ECS task env, set `COUCHDB_INTERNAL_URL` to the same value as `COUCHDB_PUBLIC_URL` for laptop scripts (Couch is still on the public ALB, which is how laptop migrate worked before). When couch-auth-proxy is deployed, the public URL is a proxy — laptop scripts must then reach the internal Couch via `scripts/ssmCouchTunnel.sh` (`http://127.0.0.1:5984`) so they talk to the same service Conductor uses. Leave `COUCHDB_PUBLIC_URL` as the public HTTPS hostname.
 
 ### Conductor (API Service)
 
