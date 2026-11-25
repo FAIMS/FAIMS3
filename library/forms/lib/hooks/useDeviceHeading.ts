@@ -80,9 +80,11 @@ interface NativeCompassSession {
  * sensor session, and so unmount during `startListening()` still stops it.
  */
 const nativeHeadingListeners = new Set<NativeHeadingListener>();
+// Share startup between mounted maps instead of starting Capgo twice.
 let nativeStartPromise: Promise<NativeCompassSession | null> | null = null;
-// Capgo start/stop is global: a new session must wait for the previous stop.
+// Wait for the previous global sensor session to stop before starting another.
 let nativeStopPromise: Promise<void> | null = null;
+// Sensor hardware does not change while the app is running.
 let androidSensorAvailabilityPromise: ReturnType<
   typeof getAndroidCompassSensorAvailability
 > | null = null;
@@ -252,14 +254,6 @@ async function subscribeNativeHeading(
   return release;
 }
 
-/** Test-only: drop leaked native subscribers between cases. */
-export function resetNativeCompassForTests(): void {
-  nativeHeadingListeners.clear();
-  nativeStartPromise = null;
-  nativeStopPromise = null;
-  androidSensorAvailabilityPromise = null;
-}
-
 /**
  * Read and smooth compass updates while mounted.
  * @param onHeadingChange Optional callback for redraws without React rerenders.
@@ -267,18 +261,29 @@ export function resetNativeCompassForTests(): void {
 export function useDeviceHeading(
   onHeadingChange?: (heading: DeviceHeadingUpdate) => void
 ): DeviceHeading {
+  // Use React state only for consumers without an update callback.
   const [headingDeg, setHeadingDeg] = useState<number | null>(null);
   const platform = Capacitor.getPlatform();
+
+  // Retain smoothing history and the last published value between samples.
   const smoothingStateRef = useRef<HeadingSmoothingState>(
     createHeadingSmoothingState()
   );
   const lastPublishedHeadingRef = useRef<number | null>(null);
+
+  // Read the latest callback without restarting the sensor subscription.
   const onHeadingChangeRef = useRef(onHeadingChange);
   onHeadingChangeRef.current = onHeadingChange;
+
+  // Capgo Android may emit one reading before both sensor vectors are ready.
+  // Only Android discards its first sample, including after a stale period.
   const ignoreInitialAndroidSampleRef = useRef(platform === 'android');
+  // Track silence on Android; iOS may legitimately pause heading events at rest.
   const staleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Browser orientation permission must be requested from a user gesture.
   const webPermissionRequestedRef = useRef(false);
 
+  // iOS uses true north; Android and web report magnetic north.
   const reference: CompassReference | null =
     platform === 'ios' || platform === 'android'
       ? NATIVE_REFERENCE[platform]
@@ -317,7 +322,7 @@ export function useDeviceHeading(
 
     staleTimerRef.current = setTimeout(() => {
       staleTimerRef.current = null;
-      // Let the map fall back to GPS if Android stops delivering compass events.
+      // Discard old smoothing history and warm up when Android events resume.
       smoothingStateRef.current = createHeadingSmoothingState();
       ignoreInitialAndroidSampleRef.current = true;
       publishHeading(null);

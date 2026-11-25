@@ -7,6 +7,7 @@
  */
 
 import {act, cleanup, renderHook, waitFor} from '@testing-library/react';
+import * as React from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -49,11 +50,10 @@ vi.mock('../native/iosCompassAvailability', () => ({
 }));
 
 import {displayHeadingDegrees} from '../components/maps/heading';
-import {
-  ANDROID_HEADING_STALE_AFTER_MS,
-  resetNativeCompassForTests,
-  useDeviceHeading,
-} from './useDeviceHeading';
+// Reload the hook module between tests to isolate its shared native session.
+type UseDeviceHeadingModule = typeof import('./useDeviceHeading');
+let useDeviceHeading: UseDeviceHeadingModule['useDeviceHeading'];
+let ANDROID_HEADING_STALE_AFTER_MS: number;
 
 type HeadingChange = (event: {value: number}) => void;
 
@@ -85,7 +85,15 @@ function mockGrantedNativeListener() {
 describe('useDeviceHeading', () => {
   const originalDeviceOrientationEvent = window.DeviceOrientationEvent;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Keep the same React instance as Testing Library after resetting modules.
+    vi.resetModules();
+    vi.doMock('react', () => React);
+    const headingModule = await import('./useDeviceHeading');
+    useDeviceHeading = headingModule.useDeviceHeading;
+    ANDROID_HEADING_STALE_AFTER_MS =
+      headingModule.ANDROID_HEADING_STALE_AFTER_MS;
+
     mocks.getPlatform.mockReturnValue('web');
     mocks.addListener.mockReset();
     mocks.startListening.mockReset();
@@ -106,7 +114,6 @@ describe('useDeviceHeading', () => {
     cleanup();
     await flushNativeStart();
     window.DeviceOrientationEvent = originalDeviceOrientationEvent;
-    resetNativeCompassForTests();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
