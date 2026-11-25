@@ -168,14 +168,14 @@ data "cloudinit_config" "couchdb_config" {
       ]
       write_files = [
         {
-          encoding    = "b64"
-          content     = filebase64("${path.module}/couchdb-backup-restic.sh")
+          encoding    = "gz+b64"
+          content     = base64gzip(file("${path.module}/couchdb-backup-restic.sh"))
           path        = "/opt/backup/couchdb-backup-restic.sh"
           permissions = "0755"
         },
         {
-          encoding    = "b64"
-          content     = filebase64("${path.module}/restore-backup.sh")
+          encoding    = "gz+b64"
+          content     = base64gzip(file("${path.module}/restore-backup.sh"))
           path        = "/opt/backup/restore-backup.sh"
           permissions = "0755"
         },
@@ -260,20 +260,23 @@ resource "digitalocean_volume" "couchdb-volume" {
   description             = "couchdb storage"
 }
 
-resource "digitalocean_volume_attachment" "couchdb-volume" {
-  droplet_id = digitalocean_droplet.couchdb.id
-  volume_id  = digitalocean_volume.couchdb-volume.id
-}
-
 resource "digitalocean_droplet" "couchdb" {
   image      = var.droplet_image
   name       = "couchdb-${var.deployment_domain}"
   region     = var.region
   size       = var.droplet_size
   monitoring = true
+  volume_ids = [digitalocean_volume.couchdb-volume.id]
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
   ]
   user_data = data.cloudinit_config.couchdb_config.rendered
+
+  lifecycle {
+    precondition {
+      condition     = length(data.cloudinit_config.couchdb_config.rendered) <= 65536
+      error_message = "Rendered CouchDB cloud-init user data must not exceed DigitalOcean's 64KB limit."
+    }
+  }
 }
 
