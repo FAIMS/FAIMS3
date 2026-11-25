@@ -122,17 +122,17 @@ Then use the values from `api/.env` to fill out the first fields (db url,
 username, password) in `scripts/.env`, and set `STACK_NAME` to the CloudFormation
 stack name from `config/<env>/aws.json` (same as `stackName`).
 
-### Local access to VPC-only Couch (couch auth proxy)
+### Local access to VPC-only Couch
 
-**When** couch-auth-proxy is deployed (Couch no longer on the public ALB;
-[#2211](https://github.com/FAIMS/FAIMS3/pull/2211) — expected on `main` later),
-`env-from-cdk-stack` sets `COUCHDB_INTERNAL_URL` to a **VPC private** address.
-Laptop scripts (`dump-user-emails`, `migrate-with-keys`, baseline) cannot reach
-it directly.
+`env-from-cdk-stack` copies the Conductor task env, so
+`COUCHDB_INTERNAL_URL` is now the **VPC-only** hostname
+`http://couchdb.internal.<baseDomain>:5984`. Laptops cannot resolve that
+name. Laptop scripts (`dump-user-emails`, `migrate-with-keys`, baseline)
+must use an SSM port-forward, not the public `https://db.<domain>:443` URL.
 
 **Fix:** SSM port-forward Couch `:5984` to localhost, then point both
 `api/.env` and `scripts/.env` at the tunnel (leave `COUCHDB_PUBLIC_URL` as the
-public proxy hostname). Ensure `scripts/.env` has `STACK_NAME` (see Baseline
+public ALB HTTPS hostname). Ensure `scripts/.env` has `STACK_NAME` (see Baseline
 below).
 
 ```bash
@@ -147,9 +147,6 @@ COUCHDB_INTERNAL_URL=http://127.0.0.1:5984
 # infrastructure/aws-cdk/scripts/.env (baseline / EC2 helpers)
 COUCH_URL=http://127.0.0.1:5984
 ```
-
-Until proxy lands on `main`, skip this if Couch is still reachable via the
-exported public/internal URL.
 
 ### Notify users
 

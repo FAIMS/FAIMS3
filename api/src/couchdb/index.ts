@@ -112,6 +112,61 @@ export const databaseValidityReport: CouchDBConnectionResult = {
   validate_error: '',
 };
 
+/**
+ * Replace the in-VPC Couch URL/hostname in operator-facing text so the
+ * unauthenticated fallback page never shows `couchdb.internal.*`.
+ * `verifyCouchDBConnection` still records the real URL for logs and CLI.
+ */
+export function redactInternalCouchHost(text: string): string {
+  const internalUrl = config.couchdbInternalUrl;
+  const publicUrl = config.couchdbPublicUrl;
+  if (!internalUrl || internalUrl === publicUrl) {
+    return text;
+  }
+
+  let redacted = text.split(internalUrl).join(publicUrl);
+  try {
+    const internal = new URL(internalUrl);
+    let publicHost = 'CouchDB';
+    let publicAuthority = 'CouchDB';
+    try {
+      const published = new URL(publicUrl);
+      publicHost = published.hostname;
+      publicAuthority = published.host;
+    } catch {
+      // Keep the generic stand-in when the public URL is not parseable.
+    }
+    if (internal.host && internal.host !== internal.hostname) {
+      redacted = redacted.split(internal.host).join(publicAuthority);
+    }
+    if (internal.hostname) {
+      redacted = redacted.split(internal.hostname).join(publicHost);
+    }
+  } catch {
+    // Ignore unparseable internal URLs; the full-URL replace above still runs.
+  }
+  return redacted;
+}
+
+/**
+ * Copy of {@link CouchDBConnectionResult} safe to interpolate into GET `/`
+ * fallback HTML. Does not mutate {@link databaseValidityReport}.
+ */
+export function publicFacingDatabaseReport(
+  report: CouchDBConnectionResult
+): CouchDBConnectionResult {
+  return {
+    valid: report.valid,
+    server_msg: report.server_msg
+      ? redactInternalCouchHost(report.server_msg)
+      : report.server_msg,
+    validate_error: report.validate_error
+      ? redactInternalCouchHost(report.validate_error)
+      : report.validate_error,
+    database_errors: report.database_errors?.map(redactInternalCouchHost),
+  };
+}
+
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
   result.valid = true;
