@@ -310,7 +310,10 @@ export function useDeviceHeading(
     [reference]
   );
 
-  /** Clear Android's heading after updates stop so the map can use GPS. */
+  /** Clear Android's heading after updates stop so the map can use GPS.
+   * iOS may stop sending updates when the device is stationary,
+   * so missing events do not necessarily mean the heading is stale.
+   */
   const armAndroidStaleTimer = useCallback(() => {
     if (platform !== 'android') {
       return;
