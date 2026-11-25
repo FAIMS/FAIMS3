@@ -49,6 +49,7 @@ describe('buildConductorRuntimeEnv', () => {
     webUrl: 'https://web.example.com',
     appId: 'org.example.app',
     couchDBEndpoint: 'https://couch.example.com:443',
+    couchDBInternalUrl: 'http://couchdb.internal.example.com:5984',
     couchDBPort: 443,
     conductorExternalPort: 443,
     conductorInternalPort: 8000,
@@ -61,11 +62,24 @@ describe('buildConductorRuntimeEnv', () => {
     awsRegion: 'ap-southeast-2',
   });
 
+  it('sets a VPC HTTP internal Couch URL distinct from the public HTTPS URL', () => {
+    expect(env.COUCHDB_INTERNAL_URL).toBe(
+      'http://couchdb.internal.example.com:5984'
+    );
+    expect(env.COUCHDB_PUBLIC_URL).toBe('https://couch.example.com:443');
+    expect(env.COUCHDB_INTERNAL_URL).not.toBe(env.COUCHDB_PUBLIC_URL);
+    expect(env.COUCHDB_EXTERNAL_PORT).toBe('443');
+  });
+
   it('overlays resolved endpoints, ports, S3 bucket/region, and KEY_SOURCE', () => {
     expect(env.CONDUCTOR_PUBLIC_URL).toBe('https://api.example.com:443');
     expect(env.CONDUCTOR_URL).toBe('https://api.example.com:443');
     expect(env.WEB_APP_PUBLIC_URL).toBe('https://app.example.com');
     expect(env.COUCHDB_PUBLIC_URL).toBe('https://couch.example.com:443');
+    expect(env.COUCHDB_INTERNAL_URL).toBe(
+      'http://couchdb.internal.example.com:5984'
+    );
+    expect(env.COUCHDB_INTERNAL_URL).not.toBe(env.COUCHDB_PUBLIC_URL);
     expect(env.COUCHDB_EXTERNAL_PORT).toBe('443');
     expect(env.CONDUCTOR_EXTERNAL_PORT).toBe('443');
     expect(env.CONDUCTOR_INTERNAL_PORT).toBe('8000');
@@ -114,6 +128,7 @@ function envForMigration(migration: {
     webUrl: 'https://web.example.com',
     appId: 'org.example.app',
     couchDBEndpoint: 'https://couch.example.com:443',
+    couchDBInternalUrl: 'http://couchdb.internal.example.com:5984',
     couchDBPort: 443,
     conductorExternalPort: 443,
     conductorInternalPort: 8000,
@@ -202,6 +217,7 @@ describe('buildConductorRuntimeEnv SAML idpPublicKey', () => {
       webUrl: 'https://web.example.com',
       appId: 'org.example.app',
       couchDBEndpoint: 'https://couch.example.com:443',
+      couchDBInternalUrl: 'http://couchdb.internal.example.com:5984',
       couchDBPort: 443,
       conductorExternalPort: 443,
       conductorInternalPort: 8000,

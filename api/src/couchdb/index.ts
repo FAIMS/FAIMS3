@@ -100,6 +100,16 @@ const pouchOptions = () => {
 
 export type CouchDBConnectionResult = {
   valid: boolean;
+  /**
+   * HEAD to Couch succeeded. GET `/` uses this instead of interpolating
+   * {@link server_msg}, which may include the internal Couch URL.
+   */
+  canReachServer: boolean;
+  /** Required DB names that returned not_found. */
+  missingDatabases: string[];
+  /** Required DB names whose info() call threw. */
+  unreachableDatabases: string[];
+  /** Operator diagnostic; may include the internal Couch URL. */
   server_msg?: string;
   database_errors?: string[];
   validate_error?: string;
@@ -107,6 +117,9 @@ export type CouchDBConnectionResult = {
 
 export const databaseValidityReport: CouchDBConnectionResult = {
   valid: true,
+  canReachServer: true,
+  missingDatabases: [],
+  unreachableDatabases: [],
   server_msg: '',
   database_errors: [],
   validate_error: '',
@@ -115,6 +128,9 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
   result.valid = true;
+  result.canReachServer = true;
+  result.missingDatabases = [];
+  result.unreachableDatabases = [];
   result.server_msg = '';
   result.database_errors = [];
   result.validate_error = '';
@@ -133,6 +149,7 @@ export const verifyCouchDBConnection = async () => {
 
   if (!response) {
     result.valid = false;
+    result.canReachServer = false;
     result.server_msg =
       `Unable to connect to CouchDB server at ${url}` +
       (result.server_msg ? ` (${result.server_msg})` : '');
@@ -155,10 +172,12 @@ export const verifyCouchDBConnection = async () => {
       const info = (await dbInstance.info()) as any; // type does not include error
       if (info.error === 'not_found') {
         result.valid = false;
+        result.missingDatabases.push(db);
         result.database_errors?.push(`Database ${db} not found`);
       }
     } catch (error: unknown) {
       result.valid = false;
+      result.unreachableDatabases.push(db);
       const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
         `Unable to connect to CouchDB database ${db}: ${detail}`
