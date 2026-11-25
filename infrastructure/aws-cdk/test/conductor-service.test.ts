@@ -74,6 +74,7 @@ function conductorServiceProperties(
     couchDbAdminSecret,
     couchDBPort: 443,
     couchDBEndpoint: 'https://couch.example.com:443',
+    couchDBInternalUrl: 'http://couchdb.internal.example.com:5984',
     webUrl: 'https://web.example.com',
     webAppPublicUrl: 'https://app.example.com',
     appId: 'org.example.app',
