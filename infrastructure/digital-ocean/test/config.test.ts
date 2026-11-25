@@ -19,6 +19,8 @@ const validConfig = {
     dropletImage: 'ubuntu-24-04-x64',
     dropletSize: 's-2vcpu-4gb-intel',
     volumeSize: 400,
+    swapSize: 2,
+    adminSshCidrs: ['198.51.100.42/32'],
   },
   storage: {
     bucket: 'faims-map-assets',

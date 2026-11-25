@@ -18,6 +18,8 @@ locals {
   couchdb_version          = local.do_config.couch.version
   couch_volume_size        = try(local.do_config.couch.volumeSize, 400)
   couch_volume_snapshot_id = try(local.do_config.couch.snapshotId, "")
+  couch_swap_size_gib      = try(local.do_config.couch.swapSize, 1)
+  couch_admin_ssh_cidrs    = try(local.do_config.couch.adminSshCidrs, [])
   backup_on_calendar       = try(local.do_config.backup.schedule.onCalendar, "daily")
   backup_randomized_delay_seconds = try(
     local.do_config.backup.schedule.randomizedDelayMinutes * 60,
@@ -72,6 +74,7 @@ module "couchdb" {
   source                      = "../couchdb"
   deployment_domain           = local.base_domain
   couch_domain                = local.couch_domain
+  admin_ssh_cidrs             = local.couch_admin_ssh_cidrs
   cookie_secret               = local.api_env_map.FAIMS_COOKIE_SECRET
   couchdb_user                = local.api_env_map.COUCHDB_USER
   couchdb_password            = local.api_env_map.COUCHDB_PASSWORD
@@ -94,6 +97,7 @@ module "couchdb" {
   couchdb_version             = local.couchdb_version
   couchdb_volume_size         = local.couch_volume_size
   couchdb_volume_snapshot_id  = local.couch_volume_snapshot_id
+  swap_size_gib               = local.couch_swap_size_gib
 }
 
 module "apps" {

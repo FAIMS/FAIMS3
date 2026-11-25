@@ -6,6 +6,8 @@ DO_SPACES_BUCKET=${var.backup_bucket}
 AWS_ACCESS_KEY_ID=${var.backup_access_key_id}
 AWS_SECRET_ACCESS_KEY=${var.backup_secret_access_key}
 RESTIC_PASSWORD=${var.restic_password}
+COUCHDB_USER=${var.couchdb_user}
+COUCHDB_PASSWORD=${var.couchdb_password}
 KEEP_DAILY=${var.backup_keep_daily}
 KEEP_WEEKLY=${var.backup_keep_weekly}
 KEEP_MONTHLY=${var.backup_keep_monthly}
@@ -26,6 +28,59 @@ Type=oneshot
 ExecStart=/opt/backup/couchdb-backup-restic.sh
 User=root
 Group=root
+UMask=0077
+EOT
+
+  generated_couchdb_logging_override = <<-EOT
+[Service]
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=couchdb
+EOT
+
+  generated_journald_config = <<-EOT
+[Journal]
+Storage=persistent
+SystemMaxUse=500M
+EOT
+
+  volume_name = "couchdb-data-${replace(var.deployment_domain, ".", "-")}"
+
+  generated_volume_setup = <<-EOT
+#!/bin/bash
+set -euo pipefail
+
+VOLUME_LINK="/dev/disk/by-id/scsi-0DO_Volume_${local.volume_name}"
+MOUNT_POINT="/mnt/couchdb"
+
+for attempt in $(seq 1 120); do
+    if [[ -b "$VOLUME_LINK" ]]; then
+        break
+    fi
+    echo "Waiting for CouchDB volume $VOLUME_LINK ($attempt/120)"
+    sleep 5
+done
+
+if [[ ! -b "$VOLUME_LINK" ]]; then
+    echo "CouchDB volume did not attach within 10 minutes: $VOLUME_LINK" >&2
+    exit 1
+fi
+
+mkdir -p "$MOUNT_POINT"
+if ! blkid -q "$VOLUME_LINK"; then
+    mkfs -t ext4 "$VOLUME_LINK"
+fi
+
+VOLUME_UUID="$(blkid -s UUID -o value "$VOLUME_LINK")"
+awk '!($2 == "/mnt/couchdb")' /etc/fstab > /etc/fstab.tmp
+printf 'UUID=%s /mnt/couchdb ext4 defaults,nofail,discard 0 2\n' "$VOLUME_UUID" >> /etc/fstab.tmp
+cat /etc/fstab.tmp > /etc/fstab
+rm -f /etc/fstab.tmp
+
+if ! mountpoint -q "$MOUNT_POINT"; then
+    mount "$MOUNT_POINT"
+fi
+mkdir -p "$MOUNT_POINT/data"
 EOT
 
   generated_backup_timer = <<-EOT
@@ -62,7 +117,7 @@ authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_
 enable_cors = true
 
 [log]
-writer = syslog
+writer = stderr
 level = info
 
 [chttpd_auth]
@@ -141,20 +196,32 @@ data "cloudinit_config" "couchdb_config" {
           content     = base64encode(local.generated_backup_timer)
           path        = "/etc/systemd/system/couchdb-backup.timer"
           permissions = "0644"
+        },
+        {
+          encoding    = "b64"
+          content     = base64encode(local.generated_couchdb_logging_override)
+          path        = "/etc/systemd/system/couchdb.service.d/logging.conf"
+          permissions = "0644"
+        },
+        {
+          encoding    = "b64"
+          content     = base64encode(local.generated_journald_config)
+          path        = "/etc/systemd/journald.conf.d/couchdb.conf"
+          permissions = "0644"
+        },
+        {
+          encoding    = "b64"
+          content     = base64encode(local.generated_volume_setup)
+          path        = "/usr/local/sbin/setup-couchdb-volume"
+          permissions = "0755"
         }
       ]
       runcmd = [
+        # Add swap for restic's peak memory requirements on small droplets.
+        "if [ ${var.swap_size_gib} -gt 0 ] && ! swapon --show=NAME --noheadings | grep -q '^/swapfile$'; then fallocate -l ${var.swap_size_gib}G /swapfile; chmod 0600 /swapfile; mkswap /swapfile; swapon /swapfile; grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab; fi",
         # Wait for the attached block volume, preserve existing/restored
         # filesystems, and mount once by its stable device path.
-        "DEVICE=\"\"",
-        "for i in $(seq 1 30); do for link in /dev/disk/by-id/scsi-0DO_Volume_*; do if [[ -e \"$link\" ]]; then DEVICE=\"$(readlink -f \"$link\")\"; break 2; fi; done; sleep 2; done",
-        "test -n \"$DEVICE\"",
-        "test -b \"$DEVICE\"",
-        "mkdir -p /mnt/couchdb",
-        "if ! blkid -q \"$DEVICE\"; then mkfs -t ext4 \"$DEVICE\"; fi",
-        "grep -q \" $DEVICE /mnt/couchdb \" /proc/mounts || mountpoint -q /mnt/couchdb || (grep -q \"/mnt/couchdb\" /etc/fstab || echo \"$DEVICE /mnt/couchdb ext4 defaults,nofail,discard 0 2\" >> /etc/fstab)",
-        "mountpoint -q /mnt/couchdb || mount /mnt/couchdb",
-        "mkdir -p /mnt/couchdb/data",
+        "/usr/local/sbin/setup-couchdb-volume",
         # Install and configure CouchDB
         # make sure we don't automatically start CouchDB during installation
         "printf '%s\\n' 'couchdb couchdb/mode select none' | debconf-set-selections",
@@ -171,10 +238,13 @@ data "cloudinit_config" "couchdb_config" {
         "chown -R couchdb:couchdb /mnt/couchdb/data",
         # generate local.ini
         "echo '${base64encode(local.generated_local_ini)}' | base64 -d > /opt/couchdb/etc/local.d/local.ini",
+        "chown couchdb:couchdb /opt/couchdb/etc/local.d/local.ini",
         "chmod 0600 /opt/couchdb/etc/local.d/local.ini",
+        "mkdir -p /var/log/journal",
+        "systemctl daemon-reload",
+        "systemctl restart systemd-journald",
         "service couchdb start",
         # configure backup timer
-        "systemctl daemon-reload",
         "systemctl enable --now couchdb-backup.timer"
       ]
     })
@@ -183,7 +253,7 @@ data "cloudinit_config" "couchdb_config" {
 
 resource "digitalocean_volume" "couchdb-volume" {
   region                  = var.region
-  name                    = "couchdb-data-${replace(var.deployment_domain, ".", "-")}"
+  name                    = local.volume_name
   size                    = var.couchdb_volume_size
   initial_filesystem_type = "ext4"
   snapshot_id             = trimspace(var.couchdb_volume_snapshot_id) == "" ? null : var.couchdb_volume_snapshot_id
@@ -196,10 +266,11 @@ resource "digitalocean_volume_attachment" "couchdb-volume" {
 }
 
 resource "digitalocean_droplet" "couchdb" {
-  image  = var.droplet_image
-  name   = "couchdb-${var.deployment_domain}"
-  region = var.region
-  size   = var.droplet_size
+  image      = var.droplet_image
+  name       = "couchdb-${var.deployment_domain}"
+  region     = var.region
+  size       = var.droplet_size
+  monitoring = true
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
   ]

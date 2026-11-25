@@ -1,6 +1,7 @@
 variable "do_token" {
   description = "digital ocean access token"
   type        = string
+  sensitive   = true
 }
 
 variable "region" {
@@ -49,6 +50,16 @@ variable "couchdb_volume_snapshot_id" {
   description = "Optional DigitalOcean volume snapshot ID used to restore CouchDB data"
   type        = string
   default     = ""
+}
+
+variable "swap_size_gib" {
+  description = "Swap size in GiB; set to zero to disable swap"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.swap_size_gib >= 0
+    error_message = "swap_size_gib must be zero or positive."
+  }
 }
 
 variable "deployment_domain" {

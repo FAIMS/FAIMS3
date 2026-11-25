@@ -29,6 +29,8 @@ export const DoConfigSchema = z
         dropletImage: nonEmptyString,
         dropletSize: nonEmptyString,
         volumeSize: z.number().int().positive(),
+        swapSize: positiveInt.optional(),
+        adminSshCidrs: z.array(nonEmptyString).optional(),
         snapshotId: z.string().trim().min(1).optional(),
       })
       .strict(),

@@ -30,6 +30,8 @@ required_vars=(
     "AWS_ACCESS_KEY_ID"
     "AWS_SECRET_ACCESS_KEY"
     "RESTIC_PASSWORD"
+    "COUCHDB_USER"
+    "COUCHDB_PASSWORD"
 )
 
 missing_vars=()
@@ -61,6 +63,8 @@ KEEP_MONTHLY="${KEEP_MONTHLY:-12}"
 BACKUP_TAG="${BACKUP_TAG:-couchdb-production}"
 LOG_DIR="${LOG_DIR:-/var/log/couchdb-backup}"
 LOG_FILE="${LOG_DIR}/backup-$(date +%Y%m%d-%H%M%S).log"
+COUCHDB_SERVICE="${COUCHDB_SERVICE:-couchdb}"
+BACKUP_METADATA_FILE="/var/tmp/faims-couchdb-backup-metadata.json"
 
 # Notification settings (optional, can be set in .env)
 NOTIFY_EMAIL="${NOTIFY_EMAIL:-}"
@@ -78,6 +82,9 @@ export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 export RESTIC_PASSWORD="$RESTIC_PASSWORD"
 export RESTIC_REPOSITORY="$RESTIC_REPOSITORY"
+export GOMAXPROCS="${GOMAXPROCS:-1}"
+export GOGC="${GOGC:-25}"
+export GOMEMLIMIT="${GOMEMLIMIT:-512MiB}"
 
 #############################################
 # LOGGING FUNCTIONS
@@ -207,35 +214,114 @@ verify_couchdb_data() {
     return 0
 }
 
-backup_secondary_indexes() {
-    log "=== Phase 1: Backing up secondary indexes (.shards) ==="
-    
-    local secondary_index_dir="$COUCHDB_DATA_DIR/.shards"
-    
-    if [[ ! -d "$secondary_index_dir" ]]; then
-        log "No secondary index directory found at $secondary_index_dir - skipping"
-        return 0
+verify_couchdb_metadata() {
+    local couchdb_node_name
+    local membership
+    local db_metadata
+    local unexpected_nodes
+    local node_url
+
+    couchdb_node_name="$(sed -n 's/^-name[[:space:]]*//p' /opt/couchdb/etc/vm.args | head -1)"
+    if [[ -z "$couchdb_node_name" ]]; then
+        log_error "Could not determine CouchDB node name"
+        return 1
     fi
-    
+
+    membership="$(curl -fsS --max-time 15 \
+        -u "$COUCHDB_USER:$COUCHDB_PASSWORD" \
+        http://127.0.0.1:5984/_membership)" || {
+        log_error "Could not query CouchDB membership before backup"
+        return 1
+    }
+    if ! jq -e --arg node "$couchdb_node_name" \
+        '.cluster_nodes == [$node] and (.all_nodes | index($node) != null)' \
+        <<<"$membership" >/dev/null; then
+        log_error "CouchDB membership is inconsistent with the configured single node $couchdb_node_name"
+        log_error "$membership"
+        return 1
+    fi
+
+    node_url="http://127.0.0.1:5984/_node/$couchdb_node_name/_dbs"
+    db_metadata="$(curl -fsS --max-time 30 \
+        -u "$COUCHDB_USER:$COUCHDB_PASSWORD" \
+        "$node_url/_all_docs?include_docs=true")" || {
+        log_error "Could not query CouchDB shard metadata before backup"
+        return 1
+    }
+
+    unexpected_nodes="$(jq -r --arg node "$couchdb_node_name" '
+        [
+            .rows[]?.doc
+            | (
+                (.by_node? // {} | keys[]),
+                (.by_range? // {} | .[] | .[]),
+                (.changelog? // [] | .[][2])
+            )
+        ]
+        | unique
+        | map(select(. != $node))
+        | .[]
+    ' <<<"$db_metadata")"
+    if [[ -n "$unexpected_nodes" ]]; then
+        log_error "CouchDB shard metadata references unexpected nodes:"
+        log_error "$unexpected_nodes"
+        log_error "Repair the database placement metadata before creating a backup"
+        return 1
+    fi
+
+    log "Verified CouchDB membership and shard placement for $couchdb_node_name"
+}
+
+write_backup_metadata() {
+    local backup_run_id=$1
+    local couchdb_package_version
+    local couchdb_node_name
+
+    couchdb_package_version="$(dpkg-query -W -f='${Version}' couchdb)"
+    couchdb_node_name="$(sed -n 's/^-name[[:space:]]*//p' /opt/couchdb/etc/vm.args | head -1)"
+    if [[ -z "$couchdb_package_version" || -z "$couchdb_node_name" ]]; then
+        log_error "Could not determine CouchDB package version or node name"
+        return 1
+    fi
+
+    jq -n \
+        --arg format_version "2" \
+        --arg backup_run_id "$backup_run_id" \
+        --arg created_at "$(date --iso-8601=seconds)" \
+        --arg couchdb_package_version "$couchdb_package_version" \
+        --arg couchdb_node_name "$couchdb_node_name" \
+        '{
+            formatVersion: $format_version,
+            backupRunId: $backup_run_id,
+            createdAt: $created_at,
+            couchdbPackageVersion: $couchdb_package_version,
+            couchdbNodeName: $couchdb_node_name
+        }' > "$BACKUP_METADATA_FILE"
+    chmod 0600 "$BACKUP_METADATA_FILE"
+}
+
+backup_secondary_indexes() {
+    local backup_run_id=$1
     local start_time=$(date +%s)
     local current_date=$(date +%Y-%m-%d)
-    local current_time=$(date +%H:%M:%S)
-    
-    log "Backing up: $secondary_index_dir"
-    
-    if restic backup "$secondary_index_dir" \
+    local index_dir="$COUCHDB_DATA_DIR/.shards"
+
+    if [[ ! -d "$index_dir" ]]; then
+        log "No secondary index directory; skipping index snapshot"
+        return 0
+    fi
+
+    if restic backup "$index_dir" "$BACKUP_METADATA_FILE" \
         --tag "$BACKUP_TAG" \
         --tag "secondary-indexes" \
+        --tag "run:$backup_run_id" \
         --tag "$current_date" \
-        --tag "phase-1-indexes" \
         --host "couchdb-indexes" \
-        --time "$current_date $current_time" \
         --verbose \
         2>&1 | tee -a "$LOG_FILE"; then
-        
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
-        log "Secondary indexes backed up successfully in ${duration} seconds"
+        log "Secondary index backup succeeded in ${duration} seconds"
         return 0
     else
         log_error "Secondary index backup failed"
@@ -244,27 +330,22 @@ backup_secondary_indexes() {
 }
 
 backup_main_databases() {
-    log "=== Phase 2: Backing up main database files ==="
-    
+    local backup_run_id=$1
     local start_time=$(date +%s)
     local current_date=$(date +%Y-%m-%d)
-    local current_time=$(date +%H:%M:%S)
-    
-    # Perform backup with exclusion of .shards directory
-    if restic backup "$COUCHDB_DATA_DIR" \
+
+    if restic backup "$COUCHDB_DATA_DIR" "$BACKUP_METADATA_FILE" \
         --exclude="$COUCHDB_DATA_DIR/.shards" \
         --tag "$BACKUP_TAG" \
         --tag "main-databases" \
+        --tag "run:$backup_run_id" \
         --tag "$current_date" \
-        --tag "phase-2-databases" \
         --host "couchdb-main" \
-        --time "$current_date $current_time" \
         --verbose \
         2>&1 | tee -a "$LOG_FILE"; then
-        
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
-        log "Main databases backed up successfully in ${duration} seconds"
+        log "Main database backup succeeded in ${duration} seconds"
         return 0
     else
         log_error "Main database backup failed"
@@ -273,47 +354,53 @@ backup_main_databases() {
 }
 
 perform_backup() {
-    log "Starting two-phase CouchDB backup"
+    local backup_run_id
+    local overall_start
+    local overall_end
+    local total_duration
+
+    backup_run_id="$(date -u +%Y%m%dT%H%M%SZ)-$(cat /proc/sys/kernel/random/uuid | tr -d '-' | cut -c1-8)"
+    overall_start=$(date +%s)
+
+    log "Starting live CouchDB backup"
     log "Target: $RESTIC_REPOSITORY"
-    log "Strategy: Secondary indexes first, then main databases"
-    log ""
-    
-    local overall_start=$(date +%s)
-    
-    # Phase 1: Backup secondary indexes FIRST
-    if ! backup_secondary_indexes; then
-        log_error "Phase 1 failed - aborting backup"
+    log "Run: $backup_run_id"
+    log "Strategy: secondary indexes first, then main database files"
+
+    if ! verify_couchdb_metadata; then
         return 1
     fi
-    
-    log ""
-    
-    # Small delay to ensure timestamp ordering
-    sleep 2
-    
-    # Phase 2: Backup main databases SECOND
-    if ! backup_main_databases; then
-        log_error "Phase 2 failed - backup incomplete"
+
+    if ! write_backup_metadata "$backup_run_id"; then
         return 1
     fi
-    
-    local overall_end=$(date +%s)
-    local total_duration=$((overall_end - overall_start))
-    
-    log ""
-    log "=== Backup Complete ==="
-    log "Total backup time: ${total_duration} seconds"
-    
-    return 0
+    trap 'rm -f "$BACKUP_METADATA_FILE"' EXIT INT TERM
+
+    if ! backup_secondary_indexes "$backup_run_id"; then
+        rm -f "$BACKUP_METADATA_FILE"
+        trap - EXIT INT TERM
+        return 1
+    fi
+
+    if ! backup_main_databases "$backup_run_id"; then
+        rm -f "$BACKUP_METADATA_FILE"
+        trap - EXIT INT TERM
+        return 1
+    fi
+    rm -f "$BACKUP_METADATA_FILE"
+    trap - EXIT INT TERM
+
+    overall_end=$(date +%s)
+    total_duration=$((overall_end - overall_start))
+    log "Live backup completed in ${total_duration} seconds without stopping CouchDB"
 }
 
 apply_retention_policy() {
     log "Applying retention policy..."
     log "Keeping: $KEEP_DAILY daily, $KEEP_WEEKLY weekly, $KEEP_MONTHLY monthly"
     
-    # Apply to both secondary indexes and main databases
     local success=0
-    
+
     log "Applying retention to secondary indexes..."
     if ! restic forget \
         --keep-daily "$KEEP_DAILY" \
@@ -426,7 +513,7 @@ show_backup_stats() {
 
 main() {
     log "=========================================="
-    log "CouchDB Two-Phase Backup Script Started"
+    log "CouchDB Live Backup Script Started"
     log "=========================================="
     log "Configuration loaded from: $ENV_FILE"
     
@@ -486,7 +573,7 @@ main() {
     log "=========================================="
     if [[ $overall_status -eq 0 ]]; then
         log "CouchDB Backup Script Completed Successfully"
-        send_notification "SUCCESS" "CouchDB two-phase backup completed successfully. Check logs at $LOG_FILE"
+        send_notification "SUCCESS" "CouchDB live backup completed successfully. Check logs at $LOG_FILE"
     else
         log "CouchDB Backup Script Completed with Errors"
         send_notification "FAILED" "CouchDB backup failed. Error: $error_message. Check logs at $LOG_FILE"

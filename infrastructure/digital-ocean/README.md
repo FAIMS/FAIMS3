@@ -49,6 +49,43 @@ pnpm --filter=@faims3/infra-digital-ocean validate-config \
   --config-dir "$PWD/infrastructure/digital-ocean/configs/sample"
 ```
 
+## CouchDB logs
+
+CouchDB writes application logs to stderr, which the systemd service sends to
+the persistent journal. Use the journal for both live and historical access:
+
+```bash
+sudo journalctl -u couchdb -f
+sudo journalctl -u couchdb --since today
+sudo journalctl -u couchdb-backup -f
+sudo journalctl -u couchdb-backup --since "7 days ago"
+```
+
+Journal storage is persistent and capped at 500 MB on the CouchDB droplet.
+
+## CouchDB backup and restore
+
+Scheduled backups leave CouchDB running. CouchDB's append-only storage supports
+copying `.couch` files while live. The backup follows CouchDB's recommended
+ordering: secondary indexes under `.shards` are captured first, then the main
+database/shard files. Both restic snapshots receive the same backup-run ID so
+restore selects the exact pair rather than matching nearby timestamps.
+
+The restore script accepts the new run-matched snapshot pairs, older
+timestamp-matched pairs, and the stopped-instance complete snapshots. Restoring
+a file-level backup onto a new instance may still require rewriting CouchDB
+shard/node metadata because that metadata contains the Erlang node name. Always
+restore to an isolated target and verify the databases before switching
+production traffic.
+
+New snapshots include a compatibility manifest with the exact installed
+CouchDB package version and Erlang node name. A live restore refuses to proceed
+when that metadata is missing or does not match the restore target. Prefer
+provisioning the target with the backed-up version and node name. This keeps
+the existing shard placement metadata valid without rewriting it. Temporary
+restores remain available for manual inspection or an explicitly controlled
+metadata repair; they are not automatically made live.
+
 ## Planned migration
 
 Phase 1 work is to establish the config structure and compatibility model before reworking the Terraform root deployment itself.

@@ -53,7 +53,8 @@ fi
 RESTIC_REPOSITORY="s3:${DO_SPACES_ENDPOINT}/${DO_SPACES_BUCKET}/couchdb-restic"
 
 # Default restore target (can be overridden with --target)
-DEFAULT_RESTORE_TARGET="/tmp/couchdb-restore-$(date +%Y%m%d-%H%M%S)"
+# put this on the volume because /tmp is often too small
+DEFAULT_RESTORE_TARGET="/mnt/couchdb/restore-tmp/couchdb-restore-$(date +%Y%m%d-%H%M%S)"
 
 # Backup metadata
 BACKUP_TAG="${BACKUP_TAG:-couchdb-production}"
@@ -79,6 +80,9 @@ export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 export RESTIC_PASSWORD="$RESTIC_PASSWORD"
 export RESTIC_REPOSITORY="$RESTIC_REPOSITORY"
+export GOMAXPROCS="${GOMAXPROCS:-1}"
+export GOGC="${GOGC:-25}"
+export GOMEMLIMIT="${GOMEMLIMIT:-512MiB}"
 
 #############################################
 # COMMAND LINE ARGUMENTS
@@ -92,6 +96,7 @@ RESTORE_TO_LIVE=false
 STOP_COUCHDB=false
 START_COUCHDB=false
 FORCE=false
+ALLOW_INCOMPATIBLE_RESTORE=false
 
 show_usage() {
     cat << EOF
@@ -109,6 +114,8 @@ Options:
     --stop-couchdb         Stop CouchDB before restore (automatic with --live)
     --start-couchdb        Start CouchDB after restore (automatic with --live)
     --force                Skip confirmation prompts
+    --allow-incompatible-restore
+                           Permit --live without matching backup metadata
     --help                 Show this help message
 
 Examples:
@@ -172,6 +179,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --force)
             FORCE=true
+            shift
+            ;;
+        --allow-incompatible-restore)
+            ALLOW_INCOMPATIBLE_RESTORE=true
             shift
             ;;
         --help)
@@ -266,59 +277,88 @@ list_backups() {
 find_snapshot_pair() {
     local index_snapshot=""
     local database_snapshot=""
-    
-    log "Searching for matching snapshot pair..."
-    
-    # Find index snapshot
+    local full_snapshot=""
+    local run_id=""
+
+    log "Searching for a complete snapshot or matching CouchDB snapshot pair..."
+
     if [[ "$USE_LATEST" == "true" ]]; then
-        # Get the LAST snapshot (newest) - restic sorts by time, oldest first
-        index_snapshot=$(restic snapshots --tag "secondary-indexes" --host "couchdb-indexes" --json | jq -r 'sort_by(.time) | .[-1].short_id')
+        database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+        if [[ -z "$database_snapshot" ]]; then
+            full_snapshot=$(restic snapshots --tag "full-data" --host "couchdb-data" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+        fi
     elif [[ -n "${SNAPSHOT_DATE:-}" ]]; then
-        # Get the LAST snapshot from that date
-        index_snapshot=$(restic snapshots --tag "secondary-indexes" --host "couchdb-indexes" --tag "$SNAPSHOT_DATE" --json | jq -r 'sort_by(.time) | .[-1].short_id')
+        database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --tag "$SNAPSHOT_DATE" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+        if [[ -z "$database_snapshot" ]]; then
+            full_snapshot=$(restic snapshots --tag "full-data" --host "couchdb-data" --tag "$SNAPSHOT_DATE" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+        fi
     elif [[ -n "$SNAPSHOT_ID" ]]; then
-        # Verify if this is an index or database snapshot
         local snapshot_info=$(restic snapshots "$SNAPSHOT_ID" --json 2>/dev/null || echo "[]")
         local snapshot_host=$(echo "$snapshot_info" | jq -r '.[0].hostname // empty')
-        
-        if [[ "$snapshot_host" == "couchdb-indexes" ]]; then
+
+        if [[ "$snapshot_host" == "couchdb-data" ]]; then
+            full_snapshot="$SNAPSHOT_ID"
+        elif [[ "$snapshot_host" == "couchdb-indexes" ]]; then
             index_snapshot="$SNAPSHOT_ID"
-            # Find corresponding database snapshot with similar time
-            local snapshot_time=$(echo "$snapshot_info" | jq -r '.[0].time')
-            database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --json | \
-                jq -r --arg time "$snapshot_time" 'map(select(.time >= $time)) | sort_by(.time) | .[0].short_id')
+            run_id="$(echo "$snapshot_info" | jq -r '.[0].tags[]? | select(startswith("run:")) | sub("^run:"; "")' | head -1)"
+            if [[ -n "$run_id" ]]; then
+                database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --tag "run:$run_id" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+            else
+                local snapshot_time=$(echo "$snapshot_info" | jq -r '.[0].time')
+                database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --json | \
+                    jq -r --arg time "$snapshot_time" 'map(select(.time >= $time)) | sort_by(.time) | .[0].short_id')
+            fi
         else
             database_snapshot="$SNAPSHOT_ID"
-            # Find corresponding index snapshot with earlier time
-            local snapshot_time=$(echo "$snapshot_info" | jq -r '.[0].time')
-            index_snapshot=$(restic snapshots --tag "secondary-indexes" --host "couchdb-indexes" --json | \
-                jq -r --arg time "$snapshot_time" 'map(select(.time <= $time)) | sort_by(.time) | .[-1].short_id')
         fi
     fi
-    
-    # If we found index, find matching database snapshot
-    if [[ -n "$index_snapshot" ]] && [[ -z "$database_snapshot" ]]; then
+
+    if [[ -n "$full_snapshot" && "$full_snapshot" != "null" ]]; then
+        log "Found complete snapshot: $full_snapshot"
+        echo "- $full_snapshot"
+        return 0
+    fi
+
+    if [[ -n "$database_snapshot" && -z "$index_snapshot" ]]; then
+        local database_info
+        local database_time
+        database_info=$(restic snapshots "$database_snapshot" --json)
+        run_id="$(echo "$database_info" | jq -r '.[0].tags[]? | select(startswith("run:")) | sub("^run:"; "")' | head -1)"
+        if [[ -n "$run_id" ]]; then
+            index_snapshot=$(restic snapshots --tag "secondary-indexes" --host "couchdb-indexes" --tag "run:$run_id" --json | jq -r 'sort_by(.time) | .[-1].short_id // empty')
+            if [[ -z "$index_snapshot" ]]; then
+                log "No secondary index snapshot exists for backup run $run_id"
+                index_snapshot="-"
+            fi
+        else
+            database_time="$(echo "$database_info" | jq -r '.[0].time')"
+            index_snapshot=$(restic snapshots --tag "secondary-indexes" --host "couchdb-indexes" --json | \
+                jq -r --arg time "$database_time" 'map(select(.time <= $time)) | sort_by(.time) | .[-1].short_id // empty')
+        fi
+    fi
+
+    if [[ "$index_snapshot" == "null" ]]; then
+        index_snapshot=""
+    fi
+    if [[ "$database_snapshot" == "null" ]]; then
+        database_snapshot=""
+    fi
+
+    if [[ -n "$index_snapshot" && "$index_snapshot" != "-" && -z "$database_snapshot" ]]; then
         local index_time=$(restic snapshots "$index_snapshot" --json | jq -r '.[0].time')
         database_snapshot=$(restic snapshots --tag "main-databases" --host "couchdb-main" --json | \
             jq -r --arg time "$index_time" 'map(select(.time >= $time)) | sort_by(.time) | .[0].short_id')
     fi
-    
-    # Check for null or empty values
-    if [[ "$index_snapshot" == "null" ]] || [[ -z "$index_snapshot" ]]; then
-        log_error "Could not find index snapshot"
+
+    if [[ -z "$database_snapshot" ]]; then
+        log_error "Could not find a main database snapshot"
         return 1
     fi
-    
-    if [[ "$database_snapshot" == "null" ]] || [[ -z "$database_snapshot" ]]; then
-        log_error "Could not find database snapshot"
-        return 1
-    fi
-    
     log "Found snapshot pair:"
-    log "  Secondary indexes: $index_snapshot"
+    log "  Secondary indexes: ${index_snapshot:-not available (legacy fallback)}"
     log "  Main databases:    $database_snapshot"
-    
-    echo "$index_snapshot $database_snapshot"
+
+    echo "${index_snapshot:--} $database_snapshot"
 }
 
 #############################################
@@ -378,16 +418,21 @@ restore_secondary_indexes() {
     # Create target directory
     mkdir -p "$target"
     
-    if restic restore "$snapshot_id" \
+    local restore_status=0
+    restic restore "$snapshot_id" \
         --target "$target" \
         --verbose \
-        2>&1 | tee -a "$LOG_FILE"; then
-        
+        2>&1 | tee -a "$LOG_FILE" || restore_status=$?
+    if [[ $restore_status -eq 0 ]]; then
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         log "Secondary indexes restored successfully in ${duration} seconds"
         return 0
     else
+        if [[ $restore_status -eq 137 ]] && systemctl -q is-active "$COUCHDB_SERVICE"; then
+            log_error "Restore was killed, likely by the out-of-memory killer"
+            log_error "Try a larger droplet or use --stop-couchdb for a live restore test"
+        fi
         log_error "Secondary index restore failed"
         return 1
     fi
@@ -406,16 +451,21 @@ restore_main_databases() {
     # Create target directory
     mkdir -p "$target"
     
-    if restic restore "$snapshot_id" \
+    local restore_status=0
+    restic restore "$snapshot_id" \
         --target "$target" \
         --verbose \
-        2>&1 | tee -a "$LOG_FILE"; then
-        
+        2>&1 | tee -a "$LOG_FILE" || restore_status=$?
+    if [[ $restore_status -eq 0 ]]; then
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         log "Main databases restored successfully in ${duration} seconds"
         return 0
     else
+        if [[ $restore_status -eq 137 ]] && systemctl -q is-active "$COUCHDB_SERVICE"; then
+            log_error "Restore was killed, likely by the out-of-memory killer"
+            log_error "Try a larger droplet or use --stop-couchdb for a live restore test"
+        fi
         log_error "Main database restore failed"
         return 1
     fi
@@ -492,6 +542,63 @@ verify_restored_data() {
     fi
 }
 
+check_restore_compatibility() {
+    local target=$1
+    local metadata_file
+    local backup_version
+    local backup_node
+    local current_version
+    local current_node
+    local incompatible=0
+
+    metadata_file="$(find "$target" -type f -name 'faims-couchdb-backup-metadata.json' -print -quit)"
+    if [[ -z "$metadata_file" ]]; then
+        log_warning "Backup has no compatibility metadata (legacy snapshot)"
+        log_warning "The CouchDB version and node identity cannot be verified"
+        incompatible=1
+    elif ! jq -e . "$metadata_file" >/dev/null 2>&1; then
+        log_warning "Backup compatibility metadata is invalid JSON"
+        incompatible=1
+    else
+        backup_version="$(jq -r '.couchdbPackageVersion // empty' "$metadata_file")"
+        backup_node="$(jq -r '.couchdbNodeName // empty' "$metadata_file")"
+        current_version="$(dpkg-query -W -f='${Version}' couchdb)"
+        current_node="$(sed -n 's/^-name[[:space:]]*//p' /opt/couchdb/etc/vm.args | head -1)"
+
+        if [[ -z "$backup_version" || -z "$backup_node" ]]; then
+            log_warning "Backup metadata does not contain CouchDB version and node identity"
+            incompatible=1
+        else
+            log "Backup CouchDB package version: $backup_version"
+            log "Current CouchDB package version: $current_version"
+            log "Backup CouchDB node name: $backup_node"
+            log "Current CouchDB node name: $current_node"
+
+            if [[ "$backup_version" != "$current_version" ]]; then
+                log_error "CouchDB package version mismatch"
+                log_error "Install package version $backup_version on the restore target before restoring"
+                incompatible=1
+            fi
+            if [[ "$backup_node" != "$current_node" ]]; then
+                log_error "CouchDB node name mismatch"
+                log_error "Prefer a fresh target configured as $backup_node before restore"
+                log_error "Do not rename and reuse a populated CouchDB node; shard metadata is node-specific"
+                incompatible=1
+            fi
+        fi
+    fi
+
+    if [[ $incompatible -eq 1 && "$RESTORE_TO_LIVE" == "true" ]]; then
+        if [[ "$ALLOW_INCOMPATIBLE_RESTORE" != "true" ]]; then
+            log_error "Refusing live restore because compatibility could not be verified"
+            log_error "Restore to a temporary target, then repair and validate it explicitly"
+            log_error "Use --allow-incompatible-restore only for a deliberate recovery attempt"
+            return 1
+        fi
+        log_warning "Proceeding with an explicitly allowed incompatible live restore"
+    fi
+}
+
 move_to_live_directory() {
     local source=$1
     local backup_dir="${COUCHDB_DATA_DIR}.backup-$(date +%Y%m%d-%H%M%S)"
@@ -518,6 +625,12 @@ move_to_live_directory() {
     if sudo mv "$restored_data" "$COUCHDB_DATA_DIR"; then
         log "Restored data moved to: $COUCHDB_DATA_DIR"
         log "Previous data saved at: $backup_dir"
+
+        # Clean up the temporary restore directory
+        if [[ -d "$source" ]]; then
+            sudo rm -rf "$source"
+            log "Cleaned up temporary restore directory: $source"
+        fi
         return 0
     else
         log_error "Failed to move restored data"
@@ -577,7 +690,7 @@ main() {
     log ""
     
     # Stop CouchDB if requested
-    if [[ "$STOP_COUCHDB" == "true" ]]; then
+    if [[ "$STOP_COUCHDB" == "true" && "$RESTORE_TO_LIVE" != "true" ]]; then
         if ! stop_couchdb_service; then
             log_error "Failed to stop CouchDB"
             exit 1
@@ -589,15 +702,14 @@ main() {
     local overall_start=$(date +%s)
     local restore_status=0
     
-    # Phase 1: Restore secondary indexes
-    if ! restore_secondary_indexes "$index_snapshot" "$RESTORE_TARGET"; then
-        log_error "Phase 1 restore failed"
-        restore_status=1
+    if [[ "$index_snapshot" != "-" ]]; then
+        if ! restore_secondary_indexes "$index_snapshot" "$RESTORE_TARGET"; then
+            log_error "Phase 1 restore failed"
+            restore_status=1
+        fi
+        log ""
     fi
-    
-    log ""
-    
-    # Phase 2: Restore main databases
+
     if [[ $restore_status -eq 0 ]]; then
         if ! restore_main_databases "$database_snapshot" "$RESTORE_TARGET"; then
             log_error "Phase 2 restore failed"
@@ -620,6 +732,12 @@ main() {
             restore_status=1
         fi
     fi
+
+    if [[ $restore_status -eq 0 ]]; then
+        if ! check_restore_compatibility "$RESTORE_TARGET"; then
+            restore_status=1
+        fi
+    fi
     
     log ""
     
@@ -631,7 +749,10 @@ main() {
     
     # Move to live directory if requested
     if [[ "$RESTORE_TO_LIVE" == "true" ]] && [[ $restore_status -eq 0 ]]; then
-        if ! move_to_live_directory "$RESTORE_TARGET"; then
+        if ! stop_couchdb_service; then
+            log_error "Failed to stop CouchDB before live restore"
+            restore_status=1
+        elif ! move_to_live_directory "$RESTORE_TARGET"; then
             log_error "Failed to move restored data to live directory"
             restore_status=1
         fi
@@ -643,6 +764,12 @@ main() {
         if ! start_couchdb_service; then
             log_error "Failed to start CouchDB"
             restore_status=1
+        fi
+        log ""
+    elif [[ "$START_COUCHDB" == "true" ]] && ! systemctl is-active --quiet "$COUCHDB_SERVICE"; then
+        log_warning "Restore failed; restarting CouchDB with the previous live data"
+        if ! start_couchdb_service; then
+            log_error "Failed to restart CouchDB after aborted restore"
         fi
         log ""
     fi
