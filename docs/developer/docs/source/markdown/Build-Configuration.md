@@ -167,7 +167,7 @@ Concrete URLs. If you also set `domains` (below), the derived endpoint fields
 | `androidAppPublicUrl` | string   | Google Play store listing URL.                        |
 | `iosAppPublicUrl`     | string   | Apple App Store listing URL.                          |
 | `conductorUrls`       | string[] | Conductor URLs the app may contact (CSV in env).      |
-| `redirectWhitelist`   | string[] | Allowed redirect origins (the app adds `appId://`).   |
+| `redirectWhitelist`   | string[] | Additional redirect origins. Core clients and `appId://` are always included. |
 
 ### `domains` — derived endpoints (optional)
 

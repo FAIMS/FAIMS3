@@ -418,6 +418,29 @@ test('generated API env includes conductor, auth, and email contract values', ()
   assert.equal(raw.CONDUCTOR_SHORT_CODE_PREFIX, 'EXM');
 });
 
+test('redirect whitelist includes core clients, mobile scheme, and extras', () => {
+  const config = parseBuildConfig({
+    endpoints: {
+      apiUrl: 'https://api.example.org',
+      appUrl: 'https://app.example.org',
+      webUrl: 'https://web.example.org',
+      redirectWhitelist: [
+        'https://legacy.example.org',
+        'https://app.example.org',
+      ],
+    },
+    android: {appId: 'org.example.app'},
+  });
+
+  assert.deepEqual(config.endpoints.redirectWhitelist, [
+    'https://api.example.org',
+    'https://app.example.org',
+    'https://web.example.org',
+    'org.example.app://',
+    'https://legacy.example.org',
+  ]);
+});
+
 test('FEEDBACK_EMAIL falls back to support.supportEmail and prefers support.feedbackEmail', () => {
   const fromSupport = generateEnv({
     config: {

@@ -6,6 +6,7 @@ packages:
   - library/forms
   - library/build-config
   - infrastructure/aws-cdk
+  - infrastructure/digital-ocean
   - e2e
 onlyBuiltDependencies:
   - '@scarf/scarf'

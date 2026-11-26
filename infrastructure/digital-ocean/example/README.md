@@ -1,5 +1,11 @@
 # FAIMS3 Digital Ocean Deployment
 
+The example root is deliberately thin: it accepts `config_dir`,
+`do_token`, and optional registry credentials, then delegates resource
+coordination to `modules/deployment`. That module owns core/DO config parsing,
+domain derivation, env generation, and wiring between the API, apps, CouchDB,
+and documentation modules.
+
 This folder contains the Terraform configuration for deploying FAIMS3 to Digital Ocean. When using this template:
 
 1. Create a new private repository for your deployment
@@ -16,28 +22,81 @@ This folder contains the Terraform configuration for deploying FAIMS3 to Digital
 
 ## Configuration
 
-Configure your deployment by copying the file `terraform.tfvars.dist` as
-`terraform.tfvars`. Edit this file to add your Digital Ocean
-credentials and a contact email address for the Let's Encrypt SSL certificate.
-These settings relate to the deployment process.
+The deployment is driven by an explicit `config_dir` input. This must point at the environment folder that contains the canonical config files, for example:
 
-Create `conductor.env` by copying `conductor.env.dist` and adding your configuration
-for the server deployment. This file is copied to the server and contains
-runtime settings for the server instance.
-
-Run the script to create a key pair and CouchDB configuration
-file for your deployment. This will create a folder `assets` that will be
-used as part of the deployment process.
-
-```bash
-./makeInstanceKeys.sh
+```text
+config/dev/core.json
+config/dev/do.json
+config/dev/secrets.enc.json   # optional SOPS-encrypted overlay
+config/dev/do-secrets.enc.json # required SOPS-encrypted DigitalOcean backup secrets
 ```
 
-Add these new files to version control including the key pair and configured
-secrets. You **must** ensure that the repository is **private** if it is to be
-stored on e.g. Github. This repository will be the record of your deployment
-and the files are required to update the deployment or gain access to the
-servers.
+No fixed fallback path is used. The example deployment is intentionally required to receive its config location as a Terraform input so every deployment remains explicit and reproducible.
+
+The shared logic for generating application env values lives in the reusable module at `infrastructure/digital-ocean/modules/config`. It reads `core.json`, decrypts and merges `secrets.enc.json` via SOPS when present, and invokes the repo-wide `generate-build-config.ts` contract instead of hand-building a custom `.env` flow.
+
+`do.json` remains a deployment/infrastructure input and is read by the root deployment to configure DigitalOcean-specific resources (region, instance sizing, storage, etc.), not to derive application env variables.
+
+The Conductor image defaults to `GHCR/faims/faims3-api`. Override the optional
+`conductor.image` object when deploying a fork or alternate registry:
+
+```json
+{
+  "conductor": {
+    "imageTag": "sha-abc1234",
+    "instanceSize": "basic-m",
+    "image": {
+      "registryType": "GHCR",
+      "registry": "your-organisation",
+      "repository": "your-faims3-api"
+    }
+  }
+}
+```
+
+The tag remains explicitly pinned and `latest` is rejected. Private third-party
+images can use the existing `registry_credentials` Terraform input.
+
+DigitalOcean-only secrets live separately in `do-secrets.enc.json`. The
+deployment requires the backup credentials and a long-lived signing key pair
+at `signingKeys.privateKey` and `signingKeys.publicKey`. Both signing keys are
+base64-encoded PEM values: PKCS#8 for the private key and SPKI for the public
+key. Generate them once per environment and do not rotate or regenerate them
+during ordinary deploys.
+
+Generate a new pair for a new environment with:
+
+```bash
+pnpm --filter=@faims3/infra-digital-ocean generate-signing-keys
+```
+
+This prints only a JSON `signingKeys` fragment; it does not write key material
+to disk. Treat the terminal output as sensitive. Add that fragment to the
+decrypted `do-secrets.enc.json` using SOPS:
+
+```bash
+sops config/staging/do-secrets.enc.json
+```
+
+Run the generator only when provisioning an environment for the first time.
+Replacing an existing pair invalidates JWTs and can disrupt mobile sync until
+CouchDB accepts the new public key and existing access tokens expire.
+
+This file is decrypted by the dedicated `do-secrets` module and is never
+merged into `core.json` or passed to `generate-build-config`. The API module
+selects `KEY_SOURCE=ENV` and injects both signing-key values as DigitalOcean
+App Platform secret environment variables.
+
+For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
+
+The API uses the public, load-balanced CouchDB URL for both
+`COUCHDB_INTERNAL_URL` and `COUCHDB_PUBLIC_URL`. DigitalOcean App Platform
+does not have private-network access to the CouchDB Droplet; its HTTPS request
+terminates at the load balancer, which forwards HTTP to CouchDB on port 5984.
+The API module therefore also sets the CouchDB and Conductor external ports to
+443.
+
+Deployment/runtime secrets should come from `secrets.enc.json` and be decrypted at deploy time via SOPS. The generated API env is loaded into DigitalOcean App Platform as `type = "SECRET"` entries. Terraform inputs should be limited to deployment credentials such as `do_token` (and registry auth if required), not a second source of app secrets.
 
 ## Deployment
 
@@ -52,6 +111,17 @@ Review the deployment plan:
 ```bash
 terraform plan
 ```
+
+The plan exposes four generated-config outputs to support local verification:
+
+- `generated_api_public_env`
+- `generated_apps_public_env`
+- `generated_api_secret_env_keys`
+- `generated_apps_secret_env_keys`
+
+Public values are shown in full. Secret values remain hidden; their generated
+environment variable names are shown so the secret-overlay coverage can be
+checked without printing credentials into terminal logs.
 
 Deploy the infrastructure:
 
@@ -73,13 +143,6 @@ To login to the servers you can use the public key created earlier.
 ssh -i assets/private_key.pem conductor@conductor.faims.example.com
 ```
 
-The CouchDB nodes will have domain names of the form `couchdb-<number>.faims.example.com` and
-the username `couchdb` can be used to login, eg:
-
-```bash
-ssh -i assets/private_key.pem couchdb@couchdb-0.faims.example.com
-```
-
 ## State Management
 
 The Terraform state files (`.tfstate`) should be committed to this private
@@ -98,23 +161,3 @@ Data for CouchDB is stored on a volume which should not change even if the Couch
 is updated. However, backups before updating any infrastructure are recommended.
 
 Remember to run terraform plan before any changes to review potential impacts to your infrastructure.
-
-## Note on Destroying the Deployment
-
-At the moment there is a problem with `terraform destroy` that prevents a clean
-tear down. The problem is that the certificate on the load balancer depends
-on the domain so the domain can't be deleted until the certificate is removed.
-Terraform can't work out how to do this (or I can't work out how to tell terraform
-to do this) so for now you need to manually delete the certificate.
-
-Go to the Digital Ocean control panel and select `Networking', open the load
-balancer and look at the Settings panel. Under Forwarding Rules, first add
-an HTTP rule, then delete the HTTPS rule. Then delete the certificate
-via the doctl command line tool:
-
-```bash
-doctl compute certificate list # to get the ID
-doctl compute certificate delete <ID>
-```
-
-You can then run `terraform destroy` to remove the rest of the infrastructure.

@@ -1,0 +1,39 @@
+{
+  "region": "syd1",
+  "couch": {
+    "version": "3.5.3",
+    "dropletImage": "ubuntu-24-04-x64",
+    "dropletSize": "s-2vcpu-4gb-intel",
+    "volumeSize": 400,
+    "swapSize": 2,
+    "adminSshCidrs": ["198.51.100.42/32"]
+  },
+  "conductor": {
+    "imageTag": "v1.2.3",
+    "instanceSize": "basic-m",
+    "image": {
+      "registryType": "GHCR",
+      "registry": "faims",
+      "repository": "faims3-api"
+    }
+  },
+  "storage": {
+    "bucket": "fieldmark-map-assets",
+    "endpoint": "https://syd1.digitaloceanspaces.com"
+  },
+  "backup": {
+    "bucket": "fieldmark-example-backups",
+    "endpoint": "https://syd1.digitaloceanspaces.com",
+    "schedule": {
+      "onCalendar": "*-*-* 03:00:00",
+      "randomizedDelayMinutes": 15
+    },
+    "retention": {
+      "daily": 7,
+      "weekly": 4,
+      "monthly": 12
+    },
+    "tag": "couchdb-backup",
+    "logDir": "/var/log/couchdb-backup"
+  }
+}

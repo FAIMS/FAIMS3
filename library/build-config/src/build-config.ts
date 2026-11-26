@@ -907,6 +907,44 @@ function applySecretsOverlay(c: SharedBuildConfig): void {
   }
 }
 
+export type RedirectWhitelistOptions = {
+  apiUrl?: string;
+  appUrl?: string;
+  webUrl?: string;
+  appId: string;
+  additionalUrls?: readonly string[];
+  includeLocalhost?: boolean;
+};
+
+const LOCALHOST_REDIRECT_URLS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:8080',
+  'http://localhost:8000',
+] as const;
+
+export function buildRedirectWhitelist({
+  apiUrl,
+  appUrl,
+  webUrl,
+  appId,
+  additionalUrls = [],
+  includeLocalhost = false,
+}: RedirectWhitelistOptions): string[] {
+  return [
+    ...new Set(
+      [
+        apiUrl,
+        appUrl,
+        webUrl,
+        `${appId}://`,
+        ...(includeLocalhost ? LOCALHOST_REDIRECT_URLS : []),
+        ...additionalUrls,
+      ].filter((url): url is string => !!url)
+    ),
+  ];
+}
+
 /**
  * Applies the shared cross-field invariants so that every
  * JSON entry point yields the same canonical semantics:
@@ -947,16 +985,13 @@ function applySharedInvariants(c: SharedBuildConfig): SharedBuildConfig {
     c.authTokens.longLivedTokenDurationHints,
     c.authTokens.maximumLongLivedDurationDays
   );
-  if (!c.endpoints.redirectWhitelist?.length) {
-    const derived = [
-      c.endpoints.apiUrl,
-      c.endpoints.appUrl,
-      c.endpoints.webUrl,
-    ].filter((url): url is string => !!url);
-    if (derived.length > 0) {
-      c.endpoints.redirectWhitelist = [...new Set(derived)];
-    }
-  }
+  c.endpoints.redirectWhitelist = buildRedirectWhitelist({
+    apiUrl: c.endpoints.apiUrl,
+    appUrl: c.endpoints.appUrl,
+    webUrl: c.endpoints.webUrl,
+    appId: c.android.appId,
+    additionalUrls: c.endpoints.redirectWhitelist,
+  });
   return c;
 }
 

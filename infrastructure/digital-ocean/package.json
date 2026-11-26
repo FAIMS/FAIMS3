@@ -1,0 +1,25 @@
+{
+  "name": "@faims3/infra-digital-ocean",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate-config": "tsx validateConfig.ts",
+    "generate-signing-keys": "tsx scripts/generateSigningKeys.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --config ../../.oxlintrc.json ."
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "tsx": "^4.20.3",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": "24"
+  },
+  "packageManager": "pnpm@11.6.0"
+}

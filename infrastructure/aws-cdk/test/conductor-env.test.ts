@@ -6,6 +6,9 @@ import {
 } from '../lib/components/conductor';
 
 const core = parseBuildConfig({
+  endpoints: {
+    redirectWhitelist: ['https://legacy.example.com'],
+  },
   authProviders: {
     google: {
       id: 'google',
@@ -98,6 +101,35 @@ describe('buildConductorRuntimeEnv', () => {
         'https://app.example.com',
         'https://web.example.com',
         'org.example.app://',
+        'https://legacy.example.com',
+      ])
+    );
+  });
+
+  it('adds localhost URLs only when enabled', () => {
+    const developmentEnv = buildConductorRuntimeEnv({
+      coreConfig: core,
+      conductorEndpoint: 'https://api.example.com:443',
+      webAppPublicUrl: 'https://app.example.com',
+      webUrl: 'https://web.example.com',
+      appId: 'org.example.app',
+      couchDBEndpoint: 'https://couch.example.com:443',
+      couchDBPort: 443,
+      conductorExternalPort: 443,
+      conductorInternalPort: 8000,
+      privateKeySecretArn:
+        'arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:pk',
+      localhostWhitelist: true,
+      enabledAuthProviders: [],
+      secretEnvKeys,
+    });
+
+    expect(developmentEnv.REDIRECT_WHITELIST.split(',')).toEqual(
+      expect.arrayContaining([
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:8080',
+        'http://localhost:8000',
       ])
     );
   });
