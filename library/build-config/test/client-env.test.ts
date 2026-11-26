@@ -541,8 +541,10 @@ test('parseApiEnv maps a generated api env into ApiRuntimeConfig', () => {
   assert.equal(parsed.rateLimiterEnabled, false);
   assert.equal(parsed.jsonBodyLimit, '50mb');
   assert.deepEqual(parsed.redirectWhitelist, [
-    'https://web.example.org',
+    'https://api.example.org',
     'https://app.example.org',
+    'https://web.example.org',
+    'org.fedarch.faims3://',
   ]);
   assert.equal(parsed.localCouchdbAuth.password, 'pw');
 });

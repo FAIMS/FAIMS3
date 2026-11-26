@@ -29,6 +29,7 @@ import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
 import {
   authProviderEnvKey,
+  buildRedirectWhitelist,
   buildStringEnvMapFromRuntime,
   providerIdToEnvProvider,
   type AuthProviderConfigInput,
@@ -138,20 +139,14 @@ export function buildConductorRuntimeEnv(
   env.CONDUCTOR_PUBLIC_URL = input.conductorEndpoint;
   env.CONDUCTOR_URL = input.conductorEndpoint;
   env.WEB_APP_PUBLIC_URL = input.webAppPublicUrl;
-  env.REDIRECT_WHITELIST = [
-    input.conductorEndpoint,
-    input.webAppPublicUrl,
-    input.webUrl,
-    `${input.appId}://`,
-    ...(input.localhostWhitelist
-      ? [
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://localhost:8080',
-          'http://localhost:8000',
-        ]
-      : []),
-  ].join(',');
+  env.REDIRECT_WHITELIST = buildRedirectWhitelist({
+    apiUrl: input.conductorEndpoint,
+    appUrl: input.webAppPublicUrl,
+    webUrl: input.webUrl,
+    appId: input.appId,
+    additionalUrls: input.coreConfig.endpoints.redirectWhitelist,
+    includeLocalhost: input.localhostWhitelist,
+  }).join(',');
 
   // Map-layer object storage: on AWS ECS, the bucket/region come from CDK and
   // credentials come from the task role (never local endpoints or static keys).

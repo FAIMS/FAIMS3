@@ -28,6 +28,7 @@ export {
   toRuntimeConfig,
   readAuthProviderConfigFromEnv,
   buildAuthProviderEnvMap,
+  buildRedirectWhitelist,
   AuthProviderSchema,
   AuthProviderConfigMapSchema,
 } from './build-config.js';
@@ -35,6 +36,7 @@ export type {
   SharedBuildConfig,
   RuntimeConfig,
   PartialBuildConfig,
+  RedirectWhitelistOptions,
 } from './build-config.js';
 export {ApiEnvSchema, parseApiEnv} from './client-env/api-env.js';
 export type {
