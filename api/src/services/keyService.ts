@@ -5,6 +5,7 @@ import {importPKCS8, importSPKI, KeyLike} from 'jose';
 import {config, privateKeyPath, publicKeyPath} from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
+import {decodeBase64KeyPair} from './keyEnv';
 
 /** How many times to re-read PEMs if parse fails (torn write while keys regenerate). */
 const FILE_KEY_READ_ATTEMPTS = 3;
@@ -214,21 +215,25 @@ class EnvKeyService extends BaseKeyService {
    * Retrieves the signing key from environment and stores it for later.
    */
   async cacheSigningKey() {
-    const privateKeyString = process.env.PRIVATE_SIGNING_KEY?.trim() || '';
-    const publicKeyString = process.env.PUBLIC_SIGNING_KEY?.trim() || '';
-    if (!privateKeyString || !publicKeyString) {
+    const encodedPrivateKey = process.env.PRIVATE_SIGNING_KEY?.trim() || '';
+    const encodedPublicKey = process.env.PUBLIC_SIGNING_KEY?.trim() || '';
+    if (!encodedPrivateKey || !encodedPublicKey) {
       throw new Error(
         'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
       );
     }
 
     try {
+      const {privateKeyString, publicKeyString} = decodeBase64KeyPair(
+        encodedPrivateKey,
+        encodedPublicKey
+      );
       const private_key = await importPKCS8(
-        Buffer.from(privateKeyString, 'base64').toString('utf-8'),
+        privateKeyString,
         this.config.signingAlgorithm
       );
       const public_key = await importSPKI(
-        Buffer.from(publicKeyString, 'base64').toString('utf-8'),
+        publicKeyString,
         this.config.signingAlgorithm
       );
 
