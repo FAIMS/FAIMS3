@@ -38,6 +38,14 @@ export const DoConfigSchema = z
           message: 'A pinned image tag is required; latest is not allowed',
         }),
         instanceSize: nonEmptyString,
+        image: z
+          .object({
+            registryType: z.enum(['GHCR', 'DOCR', 'DOCKER_HUB']).optional(),
+            registry: z.string().optional(),
+            repository: nonEmptyString,
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
     couch: z

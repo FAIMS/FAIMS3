@@ -9,7 +9,13 @@ locals {
     if length(split("=", line)) >= 2 && !startswith(line, "#") && line != ""
   }
   env = merge(local.generated_env, {
+    # always use the ENV source for signing keys
     KEY_SOURCE = "ENV"
+    # we use the public URL to connect with CouchDB through the load balancer
+    COUCHDB_INTERNAL_URL    = var.couchdb_public_url
+    COUCHDB_PUBLIC_URL      = var.couchdb_public_url
+    COUCHDB_EXTERNAL_PORT   = "443"
+    CONDUCTOR_EXTERNAL_PORT = "443"
   })
   secret_env = merge(local.generated_secret_env, {
     PRIVATE_SIGNING_KEY = var.signing_private_key
@@ -37,12 +43,14 @@ resource "digitalocean_app" "conductor_app_service" {
     }
 
     service {
-      name = "api-service"
+      name      = "api-service"
+      http_port = tonumber(local.env.CONDUCTOR_INTERNAL_PORT)
       image {
-        registry_type = "GHCR"
-        registry      = "faims"
-        repository    = "faims3-api"
-        tag           = var.conductor_docker_image_tag
+        registry_type        = var.conductor_registry_type
+        registry             = var.conductor_registry
+        repository           = var.conductor_repository
+        tag                  = var.conductor_docker_image_tag
+        registry_credentials = var.registry_credentials
       }
       instance_size_slug = var.instance_size
       # Add environment variables for build
@@ -64,7 +72,7 @@ resource "digitalocean_app" "conductor_app_service" {
       }
 
       health_check {
-        http_path             = "/api/info"
+        http_path             = "/up"
         initial_delay_seconds = 60
         period_seconds        = 120
       }

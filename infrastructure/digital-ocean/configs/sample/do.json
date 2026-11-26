@@ -10,7 +10,12 @@
   },
   "conductor": {
     "imageTag": "v1.2.3",
-    "instanceSize": "basic-m"
+    "instanceSize": "basic-m",
+    "image": {
+      "registryType": "GHCR",
+      "registry": "faims",
+      "repository": "faims3-api"
+    }
   },
   "storage": {
     "bucket": "fieldmark-map-assets",

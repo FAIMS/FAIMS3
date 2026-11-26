@@ -86,6 +86,27 @@ test('parseDoConfig rejects an unpinned conductor image tag', () => {
   );
 });
 
+test('parseDoConfig accepts an overridden conductor image', () => {
+  assert.deepEqual(
+    parseDoConfig({
+      ...validConfig,
+      conductor: {
+        ...validConfig.conductor,
+        image: {
+          registryType: 'DOCKER_HUB',
+          registry: 'example',
+          repository: 'custom-api',
+        },
+      },
+    }).conductor.image,
+    {
+      registryType: 'DOCKER_HUB',
+      registry: 'example',
+      repository: 'custom-api',
+    }
+  );
+});
+
 test('parseDoConfig requires all currently consumed fields', () => {
   const {storage: _storage, ...withoutStorage} = validConfig;
   assert.throws(() => parseDoConfig(withoutStorage), ZodError);

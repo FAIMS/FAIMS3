@@ -37,6 +37,26 @@ The shared logic for generating application env values lives in the reusable mod
 
 `do.json` remains a deployment/infrastructure input and is read by the root deployment to configure DigitalOcean-specific resources (region, instance sizing, storage, etc.), not to derive application env variables.
 
+The Conductor image defaults to `GHCR/faims/faims3-api`. Override the optional
+`conductor.image` object when deploying a fork or alternate registry:
+
+```json
+{
+  "conductor": {
+    "imageTag": "sha-abc1234",
+    "instanceSize": "basic-m",
+    "image": {
+      "registryType": "GHCR",
+      "registry": "your-organisation",
+      "repository": "your-faims3-api"
+    }
+  }
+}
+```
+
+The tag remains explicitly pinned and `latest` is rejected. Private third-party
+images can use the existing `registry_credentials` Terraform input.
+
 DigitalOcean-only secrets live separately in `do-secrets.enc.json`. The
 deployment requires the backup credentials and a long-lived signing key pair
 at `signingKeys.privateKey` and `signingKeys.publicKey`. Both signing keys are
@@ -68,6 +88,13 @@ selects `KEY_SOURCE=ENV` and injects both signing-key values as DigitalOcean
 App Platform secret environment variables.
 
 For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
+
+The API uses the public, load-balanced CouchDB URL for both
+`COUCHDB_INTERNAL_URL` and `COUCHDB_PUBLIC_URL`. DigitalOcean App Platform
+does not have private-network access to the CouchDB Droplet; its HTTPS request
+terminates at the load balancer, which forwards HTTP to CouchDB on port 5984.
+The API module therefore also sets the CouchDB and Conductor external ports to
+443.
 
 Deployment/runtime secrets should come from `secrets.enc.json` and be decrypted at deploy time via SOPS. The generated API env is loaded into DigitalOcean App Platform as `type = "SECRET"` entries. Terraform inputs should be limited to deployment credentials such as `do_token` (and registry auth if required), not a second source of app secrets.
 

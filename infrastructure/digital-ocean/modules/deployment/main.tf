@@ -12,6 +12,9 @@ locals {
   region        = try(local.do_config.region, "syd1")
 
   conductor_image_tag      = try(local.do_config.conductor.imageTag, "replace-with-pinned-tag")
+  conductor_registry_type  = try(local.do_config.conductor.image.registryType, "GHCR")
+  conductor_registry       = try(local.do_config.conductor.image.registry, "faims")
+  conductor_repository     = try(local.do_config.conductor.image.repository, "faims3-api")
   conductor_size           = try(local.do_config.conductor.instanceSize, "basic-m")
   couch_droplet_size       = try(local.do_config.couch.dropletSize, "s-2vcpu-4gb-intel")
   couch_droplet_image      = local.do_config.couch.dropletImage
@@ -116,6 +119,7 @@ module "api" {
   source                     = "../api"
   deployment_domain          = local.base_domain
   api_domain                 = local.api_domain
+  couchdb_public_url         = "https://${local.couch_domain}"
   contact_email              = local.contact_email
   do_token                   = var.do_token
   conductor_env_b64          = base64encode(module.config_api.public_env)
@@ -125,6 +129,9 @@ module "api" {
   region                     = local.region
   instance_size              = local.conductor_size
   registry_credentials       = var.registry_credentials
+  conductor_registry_type    = local.conductor_registry_type
+  conductor_registry         = local.conductor_registry
+  conductor_repository       = local.conductor_repository
   conductor_docker_image_tag = local.conductor_image_tag
 }
 
