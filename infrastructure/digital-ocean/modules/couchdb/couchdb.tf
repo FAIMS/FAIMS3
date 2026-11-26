@@ -67,15 +67,33 @@ if [[ ! -b "$VOLUME_LINK" ]]; then
 fi
 
 mkdir -p "$MOUNT_POINT"
-if ! blkid -q "$VOLUME_LINK"; then
+if [[ -z "$(blkid -s TYPE -o value "$VOLUME_LINK" 2>/dev/null || true)" ]]; then
+    findmnt -rn -S "$VOLUME_LINK" >/dev/null 2>&1 && {
+        echo "Refusing to format an already-mounted volume without a detectable filesystem: $VOLUME_LINK" >&2
+        exit 1
+    }
     mkfs -t ext4 "$VOLUME_LINK"
 fi
 
 VOLUME_UUID="$(blkid -s UUID -o value "$VOLUME_LINK")"
+for mounted_at in $(findmnt -rn -S "$VOLUME_LINK" -o TARGET); do
+    if [[ "$mounted_at" != "$MOUNT_POINT" ]]; then
+        systemctl stop "$(systemd-escape --path --suffix=mount "$mounted_at")"
+    fi
+done
+
 awk '!($2 == "/mnt/couchdb")' /etc/fstab > /etc/fstab.tmp
 printf 'UUID=%s /mnt/couchdb ext4 defaults,nofail,discard 0 2\n' "$VOLUME_UUID" >> /etc/fstab.tmp
 cat /etc/fstab.tmp > /etc/fstab
 rm -f /etc/fstab.tmp
+systemctl daemon-reload
+
+for stale_unit in /etc/systemd/system/mnt-*.mount; do
+    if [[ -e "$stale_unit" ]] && grep -q "scsi-0DO_Volume_${local.volume_name}" "$stale_unit"; then
+        rm -f "$stale_unit"
+    fi
+done
+systemctl daemon-reload
 
 if ! mountpoint -q "$MOUNT_POINT"; then
     mount "$MOUNT_POINT"
