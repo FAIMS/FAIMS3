@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {generateKeyPairSync} from 'node:crypto';
 import test from 'node:test';
 import {ZodError} from 'zod';
 import {
@@ -7,6 +8,7 @@ import {
   parseDigitalOceanConfig,
   doSecretsToTerraformOutput,
 } from '../validateConfig.js';
+import {generateSigningKeys} from '../scripts/generateSigningKeys.js';
 
 const validConfig = {
   region: 'syd1',
@@ -41,6 +43,25 @@ const validConfig = {
     tag: 'couchdb-backup',
     logDir: '/var/log/couchdb-backup',
   },
+};
+
+const generatedSigningKeys = generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  privateKeyEncoding: {type: 'pkcs8', format: 'pem'},
+  publicKeyEncoding: {type: 'spki', format: 'pem'},
+});
+const validSigningKeys = {
+  privateKey: Buffer.from(generatedSigningKeys.privateKey).toString('base64'),
+  publicKey: Buffer.from(generatedSigningKeys.publicKey).toString('base64'),
+};
+
+const validSecrets = {
+  backup: {
+    accessKeyId: 'spaces-access-key',
+    secretAccessKey: 'spaces-secret-key',
+    resticPassword: 'restic-encryption-password',
+  },
+  signingKeys: validSigningKeys,
 };
 
 test('parseDoConfig accepts the currently used deployment fields', () => {
@@ -87,29 +108,15 @@ test('parseDoConfig rejects non-positive backup retention values', () => {
   );
 });
 
-test('DoSecretsSchema accepts backup credentials', () => {
-  assert.deepEqual(
-    DoSecretsSchema.parse({
-      backup: {
-        accessKeyId: 'spaces-access-key',
-        secretAccessKey: 'spaces-secret-key',
-        resticPassword: 'restic-encryption-password',
-      },
-    }),
-    {
-      backup: {
-        accessKeyId: 'spaces-access-key',
-        secretAccessKey: 'spaces-secret-key',
-        resticPassword: 'restic-encryption-password',
-      },
-    }
-  );
+test('DoSecretsSchema accepts backup credentials and signing keys', () => {
+  assert.deepEqual(DoSecretsSchema.parse(validSecrets), validSecrets);
 });
 
 test('DoSecretsSchema rejects missing backup credentials', () => {
   assert.throws(
     () =>
       DoSecretsSchema.parse({
+        ...validSecrets,
         backup: {
           accessKeyId: 'spaces-access-key',
           secretAccessKey: '',
@@ -121,13 +128,7 @@ test('DoSecretsSchema rejects missing backup credentials', () => {
 });
 
 test('DigitalOcean config validates do.json and do-secrets together', () => {
-  const parsed = parseDigitalOceanConfig(validConfig, {
-    backup: {
-      accessKeyId: 'spaces-access-key',
-      secretAccessKey: 'spaces-secret-key',
-      resticPassword: 'restic-encryption-password',
-    },
-  });
+  const parsed = parseDigitalOceanConfig(validConfig, validSecrets);
   assert.equal(parsed.do.backup.bucket, 'faims-example-backups');
   assert.equal(
     parsed.secrets.backup.resticPassword,
@@ -135,17 +136,56 @@ test('DigitalOcean config validates do.json and do-secrets together', () => {
   );
 });
 
-test('Terraform output mapping is owned by the DO secret contract', () => {
-  const output = doSecretsToTerraformOutput({
-    backup: {
-      accessKeyId: 'spaces-access-key',
-      secretAccessKey: 'spaces-secret-key',
-      resticPassword: 'restic-encryption-password',
-    },
+test('DoSecretsSchema rejects signing keys that are not PEM', () => {
+  assert.throws(
+    () =>
+      DoSecretsSchema.parse({
+        ...validSecrets,
+        signingKeys: {
+          ...validSigningKeys,
+          publicKey: Buffer.from('not a public key').toString('base64'),
+        },
+      }),
+    ZodError
+  );
+});
+
+test('DoSecretsSchema rejects a mismatched signing key pair', () => {
+  const differentPair = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    privateKeyEncoding: {type: 'pkcs8', format: 'pem'},
+    publicKeyEncoding: {type: 'spki', format: 'pem'},
   });
+  assert.throws(
+    () =>
+      DoSecretsSchema.parse({
+        ...validSecrets,
+        signingKeys: {
+          ...validSigningKeys,
+          publicKey: Buffer.from(differentPair.publicKey).toString('base64'),
+        },
+      }),
+    ZodError
+  );
+});
+
+test('generated signing keys satisfy the DigitalOcean secret contract', () => {
+  const generated = generateSigningKeys();
+  assert.doesNotThrow(() =>
+    DoSecretsSchema.parse({
+      backup: validSecrets.backup,
+      ...generated,
+    })
+  );
+});
+
+test('Terraform output mapping is owned by the DO secret contract', () => {
+  const output = doSecretsToTerraformOutput(validSecrets);
   assert.deepEqual(output, {
     backup_access_key_id: 'spaces-access-key',
     backup_secret_access_key: 'spaces-secret-key',
     restic_password: 'restic-encryption-password',
+    signing_private_key: validSigningKeys.privateKey,
+    signing_public_key: validSigningKeys.publicKey,
   });
 });

@@ -1,13 +1,20 @@
 locals {
   # Read environment variables from base64 encoded file
-  env = { for line in split("\n", base64decode(var.conductor_env_b64)) :
+  generated_env = { for line in split("\n", base64decode(var.conductor_env_b64)) :
     split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
     if length(split("=", line)) >= 2 && !startswith(line, "#") && line != ""
   }
-  secret_env = { for line in split("\n", base64decode(var.conductor_secret_env_b64)) :
+  generated_secret_env = { for line in split("\n", base64decode(var.conductor_secret_env_b64)) :
     split("=", line)[0] => join("=", slice(split("=", line), 1, length(split("=", line))))
     if length(split("=", line)) >= 2 && !startswith(line, "#") && line != ""
   }
+  env = merge(local.generated_env, {
+    KEY_SOURCE = "ENV"
+  })
+  secret_env = merge(local.generated_secret_env, {
+    PRIVATE_SIGNING_KEY = var.signing_private_key
+    PUBLIC_SIGNING_KEY  = var.signing_public_key
+  })
 }
 
 resource "digitalocean_app" "conductor_app_service" {

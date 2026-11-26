@@ -38,10 +38,34 @@ The shared logic for generating application env values lives in the reusable mod
 `do.json` remains a deployment/infrastructure input and is read by the root deployment to configure DigitalOcean-specific resources (region, instance sizing, storage, etc.), not to derive application env variables.
 
 DigitalOcean-only secrets live separately in `do-secrets.enc.json`. The
-deployment currently requires `backup.accessKeyId`,
-`backup.secretAccessKey`, and `backup.resticPassword`; this file is decrypted
-by the dedicated `do-secrets` module and is never merged into `core.json` or
-passed to `generate-build-config`.
+deployment requires the backup credentials and a long-lived signing key pair
+at `signingKeys.privateKey` and `signingKeys.publicKey`. Both signing keys are
+base64-encoded PEM values: PKCS#8 for the private key and SPKI for the public
+key. Generate them once per environment and do not rotate or regenerate them
+during ordinary deploys.
+
+Generate a new pair for a new environment with:
+
+```bash
+pnpm --filter=@faims3/infra-digital-ocean generate-signing-keys
+```
+
+This prints only a JSON `signingKeys` fragment; it does not write key material
+to disk. Treat the terminal output as sensitive. Add that fragment to the
+decrypted `do-secrets.enc.json` using SOPS:
+
+```bash
+sops config/staging/do-secrets.enc.json
+```
+
+Run the generator only when provisioning an environment for the first time.
+Replacing an existing pair invalidates JWTs and can disrupt mobile sync until
+CouchDB accepts the new public key and existing access tokens expire.
+
+This file is decrypted by the dedicated `do-secrets` module and is never
+merged into `core.json` or passed to `generate-build-config`. The API module
+selects `KEY_SOURCE=ENV` and injects both signing-key values as DigitalOcean
+App Platform secret environment variables.
 
 For API deployment, that module now emits separate non-secret and secret env payloads. Secret keys are derived from values that come from `secrets.enc.json` and are sent to DigitalOcean App Platform with `type = "SECRET"`.
 

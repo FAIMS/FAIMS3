@@ -1,6 +1,7 @@
 variable "do_token" {
   description = "digital ocean access token"
   type        = string
+  sensitive   = true
   validation {
     condition     = trimspace(var.do_token) != "" && !contains(["x", "changeme", "replace-me"], lower(trimspace(var.do_token)))
     error_message = "do_token must be set to a non-placeholder value."
@@ -47,6 +48,24 @@ variable "conductor_secret_env_b64" {
   type        = string
   sensitive   = true
 }
+variable "signing_private_key" {
+  description = "Base64-encoded PKCS#8 private signing key"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = trimspace(var.signing_private_key) != ""
+    error_message = "signing_private_key must be supplied from do-secrets.enc.json."
+  }
+}
+variable "signing_public_key" {
+  description = "Base64-encoded SPKI public signing key"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = trimspace(var.signing_public_key) != ""
+    error_message = "signing_public_key must be supplied from do-secrets.enc.json."
+  }
+}
 variable "region" {
   description = "Region to deploy to"
   type        = string
@@ -70,4 +89,5 @@ variable "instance_size" {
 variable "registry_credentials" {
   description = "Github registry credentials for pulling private images"
   type        = any
+  sensitive   = true
 }

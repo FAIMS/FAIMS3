@@ -57,3 +57,13 @@ output "restic_password" {
   value     = data.external.do_secrets.result.restic_password
   sensitive = true
 }
+
+output "signing_private_key" {
+  value     = data.external.do_secrets.result.signing_private_key
+  sensitive = true
+}
+
+output "signing_public_key" {
+  value     = data.external.do_secrets.result.signing_public_key
+  sensitive = true
+}

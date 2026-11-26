@@ -120,6 +120,8 @@ module "api" {
   do_token                   = var.do_token
   conductor_env_b64          = base64encode(module.config_api.public_env)
   conductor_secret_env_b64   = base64encode(module.config_api.secret_env)
+  signing_private_key        = module.do_secrets.signing_private_key
+  signing_public_key         = module.do_secrets.signing_public_key
   region                     = local.region
   instance_size              = local.conductor_size
   registry_credentials       = var.registry_credentials

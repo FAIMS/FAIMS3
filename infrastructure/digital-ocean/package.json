@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "validate-config": "tsx validateConfig.ts",
+    "generate-signing-keys": "tsx scripts/generateSigningKeys.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --config ../../.oxlintrc.json ."

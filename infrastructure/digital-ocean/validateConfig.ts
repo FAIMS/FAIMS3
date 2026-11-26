@@ -1,4 +1,5 @@
 import {execFileSync} from 'node:child_process';
+import {createPrivateKey, createPublicKey, timingSafeEqual} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -9,6 +10,25 @@ const regionSlug = z
   .string()
   .regex(/^[a-z]{3}[0-9]$/, 'Expected a region slug such as syd1');
 const positiveInt = z.number().int().positive();
+const base64Pem = (header: 'PRIVATE KEY' | 'PUBLIC KEY') =>
+  z.string().refine(value => {
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return false;
+    const decoded = Buffer.from(value, 'base64').toString('utf8');
+    if (
+      !decoded.startsWith(`-----BEGIN ${header}-----\n`) ||
+      !decoded.trimEnd().endsWith(`-----END ${header}-----`)
+    ) {
+      return false;
+    }
+    try {
+      if (header === 'PRIVATE KEY') createPrivateKey(decoded);
+      else createPublicKey(decoded);
+      return true;
+    } catch {
+      return false;
+    }
+  }, `Expected a valid base64-encoded ${header} PEM`);
+
 export const DoConfigSchema = z
   .object({
     region: regionSlug,
@@ -81,8 +101,36 @@ export const DoSecretsSchema = z
         resticPassword: nonEmptyString,
       })
       .strict(),
+    signingKeys: z
+      .object({
+        privateKey: base64Pem('PRIVATE KEY'),
+        publicKey: base64Pem('PUBLIC KEY'),
+      })
+      .strict(),
   })
-  .strict();
+  .strict()
+  .superRefine((secrets, context) => {
+    try {
+      const privatePublicDer = createPublicKey(
+        Buffer.from(secrets.signingKeys.privateKey, 'base64').toString('utf8')
+      ).export({format: 'der', type: 'spki'});
+      const publicDer = createPublicKey(
+        Buffer.from(secrets.signingKeys.publicKey, 'base64').toString('utf8')
+      ).export({format: 'der', type: 'spki'});
+      if (
+        privatePublicDer.length !== publicDer.length ||
+        !timingSafeEqual(privatePublicDer, publicDer)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['signingKeys', 'publicKey'],
+          message: 'Public signing key does not match the private signing key',
+        });
+      }
+    } catch {
+      // Individual PEM validation reports malformed keys.
+    }
+  });
 
 export type DoSecrets = z.infer<typeof DoSecretsSchema>;
 
@@ -141,11 +189,15 @@ export function doSecretsToTerraformOutput(secrets: DoSecrets): {
   backup_access_key_id: string;
   backup_secret_access_key: string;
   restic_password: string;
+  signing_private_key: string;
+  signing_public_key: string;
 } {
   return {
     backup_access_key_id: secrets.backup.accessKeyId,
     backup_secret_access_key: secrets.backup.secretAccessKey,
     restic_password: secrets.backup.resticPassword,
+    signing_private_key: secrets.signingKeys.privateKey,
+    signing_public_key: secrets.signingKeys.publicKey,
   };
 }
 
