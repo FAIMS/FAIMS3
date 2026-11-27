@@ -75,6 +75,7 @@ import {
   hasUpdatedTimeFilter,
   queryRecordIdsByUpdated,
 } from '../data_storage/updatedTimeFilter';
+import {resolveComputedValues} from '../derivedFields/resolveComputedValues';
 
 // =======
 // HELPERS
@@ -252,6 +253,19 @@ function revisionHistoryEntriesFromDocs(
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 /** Field `type` when the UI spec has no `type-returned` for that field. */
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
+
+/** Parent or link hops a read resolves computed values across; records
+ * further out contribute their stored values. */
+const MAX_DERIVED_DEPTH = 10;
+
+/**
+ * Records resolved during one list or export run, each with the depth it was
+ * resolved at. Holds finished results only, so a read never waits on another.
+ */
+type ResolvedRecordCache = Map<
+  string,
+  {depth: number; result: InitialFormData}
+>;
 /** CouchDB `allDocs({keys})` batch size — keeps the keys body modest. */
 const ALL_DOCS_KEY_CHUNK = 200;
 /** In-flight `allDocs` chunks. Node's per-host socket pool is small (~15). */
@@ -2225,24 +2239,103 @@ class FormOperations {
    * @param recordId - The record to load
    * @param revisionId - Specific revision; omitted → resolve head via `config`
    * @param config - Conflict behaviour for head resolution
+   * @param derivedDepth - Hops already resolved to reach this record; set by
+   * derived-value resolution when it reads a parent or linked record
+   * @param derivedCache - Records already resolved in this list or export
+   * run; set by derived-value resolution
    * @returns Form payload plus revision/form ids
    */
   async getExistingFormData({
     recordId,
     revisionId,
     config = {},
+    derivedDepth = 0,
+    derivedCache,
   }: {
     recordId: string;
     revisionId?: string;
     config?: Partial<HydratedRecordConfig>;
+    derivedDepth?: number;
+    derivedCache?: ResolvedRecordCache;
   }): Promise<InitialFormData> {
+    // Only head reads are shared. A result resolved at this depth or
+    // shallower had at least as much depth left to spend as this read.
+    const shared = revisionId === undefined ? derivedCache : undefined;
+    const cached = shared?.get(recordId);
+    if (cached && cached.depth <= derivedDepth) {
+      return cached.result;
+    }
     // Grab the hydrated version
     const hydrated = await this.hydrated.getHydratedRecord({
       recordId,
       revisionId,
       config,
     });
-    return initialFormDataFromHydrated(hydrated);
+    const formData = initialFormDataFromHydrated(hydrated);
+    // A past revision shows what was saved, and stored values stand in past
+    // the depth cap.
+    if (
+      derivedDepth > MAX_DERIVED_DEPTH ||
+      !hydrated.record.heads.includes(hydrated.revision._id)
+    ) {
+      return formData;
+    }
+    const result = await this.withComputedValues({
+      formData,
+      recordId,
+      parents: hydrated.revision.relationship?.parent,
+      derivedDepth,
+      derivedCache,
+    });
+    if (
+      shared &&
+      (shared.get(recordId)?.depth ?? Number.MAX_SAFE_INTEGER) > derivedDepth
+    ) {
+      shared.set(recordId, {depth: derivedDepth, result});
+    }
+    return result;
+  }
+  /** Overlay computed field values resolved from the record's current inputs. */
+  private async withComputedValues({
+    formData,
+    recordId,
+    parents,
+    derivedDepth,
+    derivedCache,
+  }: {
+    formData: InitialFormData;
+    recordId: string;
+    parents?: ReadonlyArray<{recordId: string}>;
+    derivedDepth: number;
+    derivedCache?: ResolvedRecordCache;
+  }): Promise<InitialFormData> {
+    const values: Record<string, unknown> = {};
+    for (const [fieldName, entry] of Object.entries(formData.data)) {
+      values[fieldName] = entry.data;
+    }
+    const updates = await resolveComputedValues({
+      engine: {
+        uiSpec: this.uiSpec,
+        core: this.core,
+        hydrated: this.hydrated,
+        form: this,
+      },
+      recordId,
+      formId: formData.formId,
+      values,
+      parents,
+      derivedDepth,
+      derivedCache,
+    });
+    const fieldNames = Object.keys(updates);
+    if (fieldNames.length === 0) {
+      return formData;
+    }
+    const data = {...formData.data};
+    for (const fieldName of fieldNames) {
+      data[fieldName] = {...data[fieldName], data: updates[fieldName]};
+    }
+    return {...formData, data};
   }
 
   /**
@@ -2314,6 +2407,9 @@ class FormOperations {
 
     const records: HydratedListRecord[] = [];
     const errors: HydratedListHydrationError[] = [];
+    // One cache for the page: a parent or linked record shared by many rows
+    // is resolved once.
+    const derivedCache: ResolvedRecordCache = new Map();
     for (const result of hydrations) {
       if (!result.ok) {
         errors.push({
@@ -2322,11 +2418,19 @@ class FormOperations {
         });
         continue;
       }
+      // One row at a time: parallel parent reads would saturate Couch.
+      const formData = await this.withComputedValues({
+        formData: result.formData,
+        recordId: result.stub.recordId,
+        parents: result.formData.context.revision.relationship?.parent,
+        derivedDepth: 0,
+        derivedCache,
+      });
       records.push({
         ...result.stub,
-        formId: result.formData.formId,
-        data: result.formData.data,
-        context: result.formData.context,
+        formId: formData.formId,
+        data: formData.data,
+        context: formData.context,
         revisionId: result.stub.revisionId,
       });
     }

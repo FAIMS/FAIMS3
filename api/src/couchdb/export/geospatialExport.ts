@@ -37,6 +37,7 @@ import {assertGdalAvailable, convertLayeredGeoJsonToGeoPackage} from './gdal';
 import {getCompiledUiSpecModel} from '../notebooks';
 import {buildExportReadyDataCopy} from './stripDeletedRelatedRefs';
 import {convertDataForOutput, truncateWithHash} from './utils';
+import {exportEngine} from './exportEngine';
 
 /**
  * Statistics returned from spatial export operations.
@@ -130,6 +131,7 @@ async function createRecordIterator(
     dataDb: context.dataDb,
     projectId,
     uiSpecification: context.uiSpecification,
+    engine: exportEngine(context.dataDb, context.uiSpecification),
     includeAttachments: false,
     ...context.exportFilter,
   });

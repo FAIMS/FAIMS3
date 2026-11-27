@@ -8,9 +8,9 @@
  *   server-side evaluation share one implementation.
  */
 
-import {DataEngine} from '../databaseEngine/engine';
 import {getRelatedRecordFields, ValuesObject} from '../uiSpecification';
 import {logWarn} from '../logging';
+import {DerivedReadCache, DerivedReadEngine} from './recordContext';
 
 /** A single stored link, as written by the Related Records field. */
 type LinkEntry = {record_id?: string};
@@ -42,15 +42,23 @@ export const linkedRecordId = (raw: unknown): string | null =>
  * revision, so callers can re-resolve when a link changes during editing.
  * A field with no link, an unresolvable link, or a link to a record of the
  * wrong form contributes no entry; callers treat a missing entry as no value.
+ * A link to a deleted record contributes an empty entry: it was read and
+ * holds no values, so references to it are blank.
  */
 export const resolveRelatedValues = async ({
   engine,
   values,
   formId,
+  derivedDepth,
+  derivedCache,
 }: {
-  engine: DataEngine;
+  engine: DerivedReadEngine;
   values: ValuesObject;
   formId: string;
+  /** Passed to linked-record reads; see getExistingFormData. */
+  derivedDepth?: number;
+  /** Passed to linked-record reads; see getExistingFormData. */
+  derivedCache?: DerivedReadCache;
 }): Promise<Record<string, ValuesObject>> => {
   const resolved: Record<string, ValuesObject> = {};
   const relatedFields = getRelatedRecordFields({
@@ -65,8 +73,14 @@ export const resolveRelatedValues = async ({
     try {
       const record = await engine.form.getExistingFormData({
         recordId: link.record_id,
+        derivedDepth,
+        derivedCache,
       });
       if (record.formId !== info.relatedFormId) continue;
+      if (record.context?.revision.deleted === true) {
+        resolved[relFieldId] = {};
+        continue;
+      }
       // Unwrap {data: ...} entries to raw values.
       const relValues: ValuesObject = {};
       for (const [k, v] of Object.entries(record.data)) {

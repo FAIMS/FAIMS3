@@ -18,6 +18,7 @@ import {
   buildParentFieldTypes,
   buildRelatedFieldTypes,
   compileComputedExpressionForForm,
+  computedFieldOrder,
   decodeMetadataRef,
   decodeParentRef,
   encodeMetadataRef,
@@ -26,6 +27,7 @@ import {
   extractExpressionReferences,
   FAIMS_TYPE_TO_EXPR_TYPE,
   fieldIdsForViewset,
+  isComputedFieldName,
   isDerivedFieldName,
   isReferenceableMetadataKey,
   splitRelatedReference,
@@ -61,14 +63,19 @@ type PropType = {
 
 /**
  * Whether a field can appear in `{ref}`: its `type-returned` maps to an
- * expression type and it is not itself a derived component.
+ * expression type and it is not a templated string. Computed fields are
+ * allowed; the form evaluates them in dependency order.
  */
 const isReferenceableField = (field: {
   'type-returned'?: string;
   'component-name'?: string;
-}) =>
-  FAIMS_TYPE_TO_EXPR_TYPE[field['type-returned'] ?? ''] !== undefined &&
-  !isDerivedFieldName(field['component-name'] ?? '');
+}) => {
+  const componentName = field['component-name'] ?? '';
+  return (
+    FAIMS_TYPE_TO_EXPR_TYPE[field['type-returned'] ?? ''] !== undefined &&
+    (!isDerivedFieldName(componentName) || isComputedFieldName(componentName))
+  );
+};
 
 /**
  * Property editor shared by ComputedNumber and ComputedText.
@@ -189,13 +196,34 @@ export const ComputedFieldEditor = ({fieldName, viewsetId}: PropType) => {
         return `{${encodeMetadataRef(missing)}}: "${missing}" is not a custom metadata key on this notebook (see the Info panel)`;
       }
       const unsafe = metadataKeys.find(key => !isReferenceableMetadataKey(key));
-      return unsafe
-        ? `{${encodeMetadataRef(unsafe)}}: "${unsafe}" cannot be referenced - rename it to use only letters, numbers, hyphens and underscores`
-        : null;
+      if (unsafe) {
+        return `{${encodeMetadataRef(unsafe)}}: "${unsafe}" cannot be referenced - rename it to use only letters, numbers, hyphens and underscores`;
+      }
+      // A cycle through this field has no evaluation order.
+      const cycle = computedFieldOrder({
+        fields: uiSpecForCompile.fields,
+        fieldIds: fieldIdsForViewset({views, viewsets}, viewsetId),
+      }).cycles.find(path => path.includes(fieldName));
+      if (!cycle) return null;
+      // Show the chain starting and ending at this field.
+      const loop = cycle.slice(0, -1);
+      const start = loop.indexOf(fieldName);
+      const chain = [...loop.slice(start), ...loop.slice(0, start), fieldName];
+      return `Circular reference: ${chain.map(getFieldLabelFor).join(' -> ')}. These fields depend on each other, so none of them can be calculated.`;
     } catch (e) {
       return e instanceof ExpressionError ? e.message : 'Invalid expression';
     }
-  }, [expression, uiSpecForCompile, viewsetId, requiredType, custom]);
+  }, [
+    expression,
+    uiSpecForCompile,
+    viewsetId,
+    requiredType,
+    custom,
+    allFields,
+    views,
+    viewsets,
+    fieldName,
+  ]);
 
   /** Label/kind lookup for chips; rebuilt when fields or metadata change. */
   const catalog = useMemo(

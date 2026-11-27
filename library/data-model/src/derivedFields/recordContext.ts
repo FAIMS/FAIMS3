@@ -10,12 +10,55 @@
 
 import {HydratedRecordDocument} from '../databaseEngine/types';
 import {
+  CompiledNotebookUiSpec,
   CREATED_TIME_ID,
   CREATOR_NAME_ID,
   ValuesObject,
 } from '../uiSpecification';
 import {logWarn} from '../logging';
 import {formatTimestamp} from '../utils';
+
+/**
+ * Records already resolved during one list or export run, keyed by record
+ * ID. Created by the caller that owns the run and passed down unchanged;
+ * only the engine reads and writes it.
+ */
+export type DerivedReadCache = Map<string, unknown>;
+
+/**
+ * The engine surface derived-value resolution reads through. Declared
+ * structurally because the engine imports this module's resolver, so
+ * importing the engine here would be circular. DataEngine satisfies it.
+ */
+export interface DerivedReadEngine {
+  uiSpec: CompiledNotebookUiSpec;
+  core: {
+    getRecord(id: string): Promise<{type: string; heads?: string[]}>;
+    getRevision(id: string): Promise<{deleted?: boolean}>;
+  };
+  hydrated: {
+    getHydratedRecord(args: {recordId: string}): Promise<{
+      revision: {
+        relationship?: {parent?: ReadonlyArray<{recordId: string}>};
+      };
+    }>;
+    getFieldValues(args: {
+      revisionId: string;
+      fields: string[];
+    }): Promise<Record<string, unknown>>;
+  };
+  form: {
+    getExistingFormData(args: {
+      recordId: string;
+      derivedDepth?: number;
+      derivedCache?: DerivedReadCache;
+    }): Promise<{
+      formId: string;
+      data: Record<string, unknown>;
+      context?: {revision: {deleted?: boolean}};
+    }>;
+  };
+}
 
 export interface RecordContext {
   // timestamp ms created

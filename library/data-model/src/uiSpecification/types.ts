@@ -176,6 +176,12 @@ const compiledFieldExtras = {
     .optional(),
   /** Field IDs referenced by the expression; used to build the eval scope. */
   expressionRefs: z.custom<string[]>().optional(),
+  /**
+   * Position of a computed field in its form's evaluation order; attached by
+   * `compileUiSpecConditionals`. Absent when the field is in a reference
+   * cycle or reads one, which leaves it blank.
+   */
+  expressionOrder: z.number().optional(),
 };
 
 const compiledFieldDefinitionV1Shape = {

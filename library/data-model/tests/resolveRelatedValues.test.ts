@@ -162,3 +162,21 @@ describe('resolveRelatedValues', () => {
     expect(values).toEqual({});
   });
 });
+
+describe('resolveRelatedValues with a deleted target', () => {
+  it('contributes an empty entry', async () => {
+    const engine = makeEngine({
+      'rec-cal': {
+        ...calibration,
+        context: {revision: {deleted: true}},
+      } as StubRecord,
+    });
+    expect(
+      await resolveRelatedValues({
+        engine,
+        values: {'Core-Calibration': linkTo('rec-cal')},
+        formId: 'TEST',
+      })
+    ).toEqual({'Core-Calibration': {}});
+  });
+});

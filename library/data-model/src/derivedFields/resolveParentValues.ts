@@ -8,9 +8,10 @@
  *   implementation.
  */
 
-import {DataEngine} from '../databaseEngine/engine';
 import {getParentFormsForForm, ValuesObject} from '../uiSpecification';
+import {isComputedFieldName} from './computedFields';
 import {referencedParentFields} from './parentFieldScan';
+import {DerivedReadCache, DerivedReadEngine} from './recordContext';
 import {logWarn} from '../logging';
 
 /** Unwraps {data: ...} form entries to raw values. */
@@ -31,20 +32,33 @@ const unwrapFormData = (data: Record<string, unknown>): ValuesObject => {
  * matching the resolution rule of the ParentFieldDisplay field. Values are
  * raw; formatting and typing happen at the point of use. Returns null when
  * there is no parent; resolution failures also return null so callers treat
- * them as no-parent.
+ * them as no-parent. A deleted parent returns an empty object: it was read
+ * and holds no values, so references to it are blank.
  */
 export const resolveParentValues = async ({
   engine,
   recordId,
   formId,
+  parents: knownParents,
+  derivedDepth,
+  derivedCache,
 }: {
-  engine: DataEngine;
+  engine: DerivedReadEngine;
   recordId: string;
   formId: string;
+  /** The record's parent links, when the caller already holds them. */
+  parents?: ReadonlyArray<{recordId: string}>;
+  /** Passed to full parent reads; see getExistingFormData. */
+  derivedDepth?: number;
+  /** Passed to full parent reads; see getExistingFormData. */
+  derivedCache?: DerivedReadCache;
 }): Promise<ValuesObject | null> => {
   try {
-    const own = await engine.hydrated.getHydratedRecord({recordId});
-    const parents = own.revision.relationship?.parent ?? [];
+    const parents =
+      knownParents ??
+      (await engine.hydrated.getHydratedRecord({recordId})).revision
+        .relationship?.parent ??
+      [];
     if (parents.length === 0) {
       return null;
     }
@@ -59,8 +73,22 @@ export const resolveParentValues = async ({
       uiSpecification: engine.uiSpec,
       formId,
     });
+    // A referenced field that is itself computed needs the full read, which
+    // resolves it; a per-field fetch returns its stored value.
+    const wantsComputed = (wanted ?? []).some(fieldId =>
+      isComputedFieldName(
+        engine.uiSpec.fields[fieldId]?.['component-name'] ?? ''
+      )
+    );
     for (const rel of parents) {
-      if (wanted !== null && wanted.length > 0) {
+      // In a list or export run the full read below is shared by every child
+      // of this parent, which beats a per-field fetch for each child.
+      if (
+        wanted !== null &&
+        wanted.length > 0 &&
+        !wantsComputed &&
+        !derivedCache
+      ) {
         // Cheap path: check the parent's form from its record document, then
         // fetch only the referenced fields from its head revision.
         const parentRecord = await engine.core.getRecord(rel.recordId);
@@ -73,8 +101,15 @@ export const resolveParentValues = async ({
           // engine's head-selection semantics.
           const parent = await engine.form.getExistingFormData({
             recordId: rel.recordId,
+            derivedDepth,
           });
-          return unwrapFormData(parent.data);
+          return parent.context?.revision.deleted === true
+            ? {}
+            : unwrapFormData(parent.data);
+        }
+        // The per-field fetch does not report deletion, so read the head.
+        if ((await engine.core.getRevision(heads[0])).deleted === true) {
+          return {};
         }
         return await engine.hydrated.getFieldValues({
           revisionId: heads[0],
@@ -83,11 +118,15 @@ export const resolveParentValues = async ({
       }
       const parent = await engine.form.getExistingFormData({
         recordId: rel.recordId,
+        derivedDepth,
+        derivedCache,
       });
       if (!parentForms.has(parent.formId)) {
         continue;
       }
-      return unwrapFormData(parent.data);
+      return parent.context?.revision.deleted === true
+        ? {}
+        : unwrapFormData(parent.data);
     }
     return null;
   } catch (e) {

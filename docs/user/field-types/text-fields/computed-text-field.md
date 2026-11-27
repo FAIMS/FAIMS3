@@ -85,9 +85,20 @@ expression — only the final result must be text.
 
 Referenced fields are normally in the same form as the Computed Text;
 fields on the record's parent can also be referenced (see below). A
-Computed Text cannot reference another computed field or a Templated
-String in the same form. For record identifiers (HRIDs), use a
-[Templated String](templated-string.md) instead.
+Computed Text can reference other Computed Text and Computed Number
+fields in the same form, and the field picker lists them. It cannot
+reference a Templated String in the same form. For record identifiers
+(HRIDs), use a [Templated String](templated-string.md) instead.
+
+### Referencing Other Computed Fields
+
+A computed field can build on another computed field in the same form,
+for example a `Size-Class` field of `{Volume} > 100 ? 'Large' : 'Small'`
+where `Volume` is a Computed Number. The fields are worked out in
+dependency order, and fields that depend on each other in a circle are
+reported as a **Circular reference** error in the Editor. See
+[Referencing Other Computed Fields](../number-fields/computed-number-field.md#referencing-other-computed-fields)
+in the Computed Number documentation.
 
 ### Referencing Parent Record Values
 
@@ -98,16 +109,18 @@ fields on the record's parent by prefixing the field's reference with
 parent field** picker below the expression lists the available parent
 fields by Field Heading.
 
-Parent references are type checked like any other reference, and —
-unlike same-form references — may point at the parent's computed fields
-and Templated Strings, whose stored values are used.
+Parent references are type checked like any other reference. They may
+point at the parent's computed fields and, unlike same-form references,
+at its Templated Strings. A referenced computed field gives its current
+value; a referenced Templated String gives its stored value.
 
-If a record has no parent, a parent reference has no value and the
-result stays blank, matching the behaviour for missing same-form
-values. The generated text is stored on save and re-derives whenever
-the record is next opened or saved; if the parent changes in the
-meantime, the stored value reflects the parent as of the record's last
-save.
+If a record has no parent, or its parent has been deleted, a parent
+reference has no value and the result stays blank, matching the
+behaviour for missing same-form values. The generated text is worked
+out from the parent's current
+values when the record is viewed and in CSV and spatial exports, so a
+change to the parent shows without reopening the record. The text is
+also stored on save.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
@@ -125,17 +138,22 @@ linked record's cutter ID. An **Insert linked record field** picker below
 the expression lists the available fields.
 
 Linked record references are type checked against the linked form, and
-may point at the linked record's computed fields and Templated Strings,
-whose stored values are used. Fields that allow multiple links, and
+may point at the linked record's computed fields and Templated Strings.
+A referenced computed field gives its current value; a referenced
+Templated String gives its stored value. Fields that allow multiple links, and
 Child-relation fields, cannot be referenced this way (children
 reference their parent with `_PARENT.`); the editor reports these with
 a specific error.
 
-If nothing is linked, the reference has no value and the result stays
-blank. The value updates while editing whenever the link is changed,
-and otherwise re-derives when the record is opened or saved — if the
-linked record changes in the meantime, the stored value reflects it as
-of this record's last save.
+If nothing is linked, or the linked record has been deleted, the
+reference has no value and the result stays blank. The value updates
+while editing whenever the link is changed. When the linked record
+itself changes, the value shows the change the next time this record is
+viewed, without reopening it for editing.
+
+A parent or linked record's computed field can itself reference another
+record, forming a chain. A chain is followed for up to ten links; past
+that, the stored value of the furthest record is used.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).

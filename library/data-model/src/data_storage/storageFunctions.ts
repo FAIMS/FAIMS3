@@ -55,6 +55,11 @@ import {
   UpdatedTimeIndexError,
   UpdatedTimeFilter,
 } from './updatedTimeFilter';
+import type {
+  DerivedReadCache,
+  DerivedReadEngine,
+} from '../derivedFields/recordContext';
+import {applyComputedValues} from '../derivedFields/resolveComputedValues';
 
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + randomUuid();
@@ -934,6 +939,7 @@ export const notebookRecordIterator = async ({
   dataDb,
   updatedAfter,
   updatedBefore,
+  engine,
 }: {
   projectId: string;
   dataDb: DataDbType;
@@ -946,8 +952,13 @@ export const notebookRecordIterator = async ({
   uiSpecification: UiSpecModel;
   updatedAfter?: number;
   updatedBefore?: number;
+  // When given, computed values resolve against current inputs
+  engine?: DerivedReadEngine;
 }) => {
   const batchSize = 20;
+  // One cache for the whole export: a parent or linked record shared by many
+  // rows is resolved once.
+  const derivedCache: DerivedReadCache = new Map();
   const updatedFilter: UpdatedTimeFilter = {updatedAfter, updatedBefore};
   const timeFilterActive = hasUpdatedTimeFilter(updatedFilter);
   const getNextBatch = async (bookmark: string | null) => {
@@ -1016,7 +1027,12 @@ export const notebookRecordIterator = async ({
           });
           // clear the record to help GC
           record = null;
-          return {record: data, done: false};
+          return {
+            record: engine
+              ? await applyComputedValues({engine, record: data, derivedCache})
+              : data,
+            done: false,
+          };
         } catch (error) {
           console.error(error);
           return {record: null, done: false};
