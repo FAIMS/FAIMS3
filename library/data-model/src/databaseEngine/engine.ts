@@ -256,7 +256,7 @@ export const UNKNOWN_TYPE_FALLBACK = '??:??';
 
 /** Parent or link hops a read resolves computed values across; records
  * further out contribute their stored values. */
-const MAX_DERIVED_DEPTH = 2;
+const MAX_DERIVED_DEPTH = 10;
 /** CouchDB `allDocs({keys})` batch size — keeps the keys body modest. */
 const ALL_DOCS_KEY_CHUNK = 200;
 /** In-flight `allDocs` chunks. Node's per-host socket pool is small (~15). */
