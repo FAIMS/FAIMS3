@@ -11,6 +11,8 @@
 
 import {
   AUTH_RECORD_ID_PREFIXES,
+  isPouchConflict,
+  isPouchNotFound,
   LoginLockoutExistingDocument,
   LoginLockoutExistingDocumentSchema,
   LoginLockoutFields,
@@ -73,24 +75,6 @@ export const isLoginLockoutStale = (
   now = Date.now()
 ): boolean => now - doc.lastAttemptMs > LOGIN_LOCKOUT_STALE_MS;
 
-const isNotFound = (error: unknown): boolean => {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-  const status = (error as {status?: unknown}).status;
-  const name = (error as {name?: unknown}).name;
-  return status === 404 || name === 'not_found';
-};
-
-const isConflict = (error: unknown): boolean => {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-  const status = (error as {status?: unknown}).status;
-  const name = (error as {name?: unknown}).name;
-  return status === 409 || name === 'conflict';
-};
-
 const wrapReadError = (error: unknown, id: string): never => {
   const detail = error instanceof Error ? error.message : String(error);
   throw new LoginLockoutUnavailableError(
@@ -112,7 +96,7 @@ const loadLockoutDoc = async (
     }
     return parsed.data;
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     if (error instanceof LoginLockoutUnavailableError) {
@@ -173,7 +157,7 @@ const deleteLoginLockoutDoc = async (
   try {
     await authDB.remove(doc);
   } catch (error) {
-    if (isNotFound(error) || isConflict(error)) {
+    if (isPouchNotFound(error) || isPouchConflict(error)) {
       return;
     }
     throw error;
@@ -236,7 +220,7 @@ export const incrementLoginLockoutForUserId = async (
       return await persistIncrement({id, userId, existing, now});
     } catch (error) {
       lastError = error;
-      if (isConflict(error)) {
+      if (isPouchConflict(error)) {
         continue;
       }
       throw error;
@@ -298,7 +282,7 @@ export const claimLoginAttemptForUserId = async (
       return {status: 'allowed', userId};
     } catch (error) {
       lastError = error;
-      if (isConflict(error)) {
+      if (isPouchConflict(error)) {
         continue;
       }
       throw error;
@@ -345,7 +329,7 @@ export const resetLoginLockoutForUserId = async (
       return;
     } catch (error) {
       lastError = error;
-      if (isConflict(error)) {
+      if (isPouchConflict(error)) {
         continue;
       }
       throw error;

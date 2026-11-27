@@ -824,7 +824,17 @@ cd api
 cp .env.dist .env
 ```
 
-Then add the following values to the bottom of the .env file:
+Then add the following values to the bottom of the .env file.
+
+In-VPC Conductor / worker tasks use
+`COUCHDB_INTERNAL_URL=http://couchdb.internal.<baseDomain>:5984`.
+`env-from-cdk-stack` copies that VPC hostname, which laptops cannot resolve.
+**Today** Couch is still on the public ALB, so a laptop migrate can use the
+public endpoint the same way this guide did before: set
+`COUCHDB_INTERNAL_URL` to the same value as `COUCHDB_PUBLIC_URL`. When
+[couch-auth-proxy](https://github.com/FAIMS/FAIMS3/pull/2211) lands, the
+public URL is a proxy — migrate must then reach the internal Couch (SSM
+tunnel; see [CouchDB backup recovery on AWS](./CouchBackupRecoveryGuideAWS.md)).
 
 ```sh
 # OVERRIDES

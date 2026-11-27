@@ -118,6 +118,11 @@ configuration, then exclude this flag
 pnpm run migrate
 ```
 
+`migrate` does everything API boot does, but forcefully: it pushes design and
+security documents regardless of their `db-setup` records, then walks notebook
+designs and raises the notebook marker. Add `--skip-notebooks` to skip the
+notebook walk.
+
 **Note** If you are running inside a container, then the above command needs to be
 run in the container rather than from your local environment:
 
@@ -130,58 +135,28 @@ applies for the commands below.
 
 ### Startup migrations (API boot)
 
-After `GET /up` is bound, the API calls `runStartupMigrations` before
-attaching the rest of the routes. That is the same work as
-`pnpm run migrate --keys`: initialise + migrate every Couch DB, then walk
-notebook / template uiSpecs. Failures are logged; the process still attaches
-the full API.
+The API migrates every database when it starts, before attaching the full
+API, so you normally do not need to run `migrate` by hand. Failures are
+logged and the API still starts.
 
-Two flags control that path (see `.env.dist`):
+- **Local / `pnpm run dev`:** leave the `.env.dist` defaults (migrate on,
+  lock off).
+- **Clustered / multi-replica production:** set
+  `STARTUP_MIGRATION_LOCK_ENABLED=true` so only one replica migrates.
+- The CLI `migrate` does **not** take the startup lock. Do not run it
+  against a live cluster that is also starting up.
 
-| Variable                         | Default                  | Effect                                                                                                                                                                                                                                                                        |
-| -------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DISABLE_MIGRATE_ON_STARTUP`     | `false` (migrate **on**) | When `true`, skip boot migrate entirely — no Couch migrate, no lock, no uiSpec migrations. Use only when you run `pnpm run migrate` / `migrate-with-keys` out of band.                                                                                                        |
-| `STARTUP_MIGRATION_LOCK_ENABLED` | `false` (lock **off**)   | When `true`, replicas claim a Couch document lock so only one instance migrates and the others wait. After `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` (default 30 minutes) a waiter steals a still-`running` lock and runs migrate itself. Unused if migrate-on-startup is disabled. |
-
-**Recommended setups**
-
-- **Local / `pnpm run dev`:** keep migrate **on**, leave the lock **off**.
-  `DISABLE_MIGRATE_ON_STARTUP=false` (or unset) and
-  `STARTUP_MIGRATION_LOCK_ENABLED=false` (the `.env.dist` defaults). A killed
-  live-reload can leave a `running` lock; the next boot would then wait up to
-  the steal timeout. You still want boot migrate so a fresh tree and schema
-  bumps just work.
-- **Clustered / multi-replica production:** keep migrate **on** and turn the
-  lock **on**. `DISABLE_MIGRATE_ON_STARTUP=false` and
-  `STARTUP_MIGRATION_LOCK_ENABLED=true`. AWS CDK hard-enables the lock unless
-  JSON `disableStartupMigrationLock` is set, and rejects
-  `disableMigrateOnStartup: true` together with an explicit lock-on. Do not
-  skip boot migrate in production unless you have a controlled out-of-band
-  migrate and have scaled the API down while it runs.
-
-Timeout is a steal, not a skip. Age is `now - startedAtMs` (no heartbeat),
-so a slow-but-alive doer is stealable the same as a crashed one. A steal
-does not cancel the original `run()`: if that process is still migrating,
-both instances run until it finishes, and it cannot write `complete` /
-`failed` onto the stolen lock.
-
-The CLI (`pnpm run migrate` / `migrate-with-keys`) does **not** take the
-startup lock. Do not run it against a live cluster that is also booting;
-stop or scale down the API first, or rely on boot alone.
-
-To inspect the lock and per-DB version documents (and, carefully, force-settle
-or rewrite a recorded version), use the local debugger:
+To inspect or repair migration state (the lock, per-DB versions, the
+notebook marker):
 
 ```bash
 pnpm run debug-migration-lock
-pnpm run debug-migration-lock -- lock
-pnpm run debug-migration-lock -- show people
-pnpm run debug-migration-lock -- unlock --yes
+pnpm run debug-migration-lock --help
 ```
 
-Write commands change Couch records only — they do not run migration
-functions. Prefer `--json` / `--strict` for scripts, and `--yes` when stdin
-is not a TTY. See `pnpm run debug-migration-lock -- --help`.
+The full explanation (what a run does, settings, the lock, rolling deploys
+and rollbacks, failure handling, and every debugger command) is in the
+developer docs: `docs/developer/docs/source/markdown/DatabaseMigrationProcess.md`.
 
 For development, there is also a script that will populate the database with projects (notebooks
 or surveys) that are

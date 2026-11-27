@@ -59,6 +59,30 @@ export interface EC2CouchDBProps {
   couchVersionTag: string;
   /** chttpd_auth.secret configuration value - injected into init file */
   cookieSecret: sm.Secret;
+  /**
+   * Public zone apex (`aws.domains.baseDomain`). Names the VPC-private
+   * hosted zone `internal.<baseDomain>` and A record
+   * `couchdb.internal.<baseDomain>`.
+   */
+  baseDomain: string;
+}
+
+/** Private Route 53 zone name: `internal.<baseDomain>`. */
+export function couchInternalZoneName(baseDomain: string): string {
+  return `internal.${baseDomain}`;
+}
+
+/** Stable in-VPC Couch hostname: `couchdb.internal.<baseDomain>`. */
+export function couchInternalHostname(baseDomain: string): string {
+  return `couchdb.${couchInternalZoneName(baseDomain)}`;
+}
+
+/**
+ * Backend Couch URL used as `COUCHDB_INTERNAL_URL`: plain HTTP on 5984.
+ * TLS already terminates at the public ALB; Couch itself listens on HTTP.
+ */
+export function couchInternalUrl(baseDomain: string): string {
+  return `http://${couchInternalHostname(baseDomain)}:5984`;
 }
 
 /**
@@ -71,14 +95,20 @@ export class EC2CouchDB extends Construct {
   public readonly couchEndpoint: string;
   /** The exposed HTTPS port */
   public readonly exposedPort: number = 443;
+  /** Port CouchDB listens on inside the VPC (ALB target and backend tasks). */
+  public readonly internalPort: number = 5984;
+  /** VPC-only hostname `couchdb.internal.<baseDomain>`. */
+  public readonly internalHostname: string;
+  /** In-VPC HTTP URL (`http://couchdb.internal.<baseDomain>:5984`). */
+  public readonly internalEndpoint: string;
+  /** Instance security group (5984 from ALB + Conductor task SG). */
+  public readonly securityGroup: ec2.SecurityGroup;
   /** The secret containing the CouchDB admin user/password */
   public readonly passwordSecret: sm.Secret;
   /** Shared ALB */
   private readonly sharedBalancer: SharedBalancer;
   /** EC2 Target group */
   private readonly targetGroup: elb.ApplicationTargetGroup;
-  /** The internal port CouchDB listens on */
-  private readonly couchInternalPort: number = 5984;
   /** The path where CouchDB data will be stored */
   private readonly couchDataPath: string = '/opt/couchdb/data';
   /** The device name for the EBS data volume */
@@ -141,6 +171,8 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
     this.monitoringConfig = props.monitoring;
+    this.internalHostname = couchInternalHostname(props.baseDomain);
+    this.internalEndpoint = couchInternalUrl(props.baseDomain);
 
     // AUXILIARY SETUP
     // ================
@@ -360,15 +392,11 @@ EOL`,
     // ================
 
     // Create a security group for the EC2 instance
-    const couchSecurityGroup = new ec2.SecurityGroup(
-      this,
-      'CouchDBSecurityGroup',
-      {
-        vpc: props.vpc,
-        allowAllOutbound: true,
-        description: 'Security group for CouchDB EC2 instances',
-      }
-    );
+    this.securityGroup = new ec2.SecurityGroup(this, 'CouchDBSecurityGroup', {
+      vpc: props.vpc,
+      allowAllOutbound: true,
+      description: 'Security group for CouchDB EC2 instances',
+    });
 
     // Create the EC2 instance
     this.instance = new ec2.Instance(this, 'CouchDBInstance' + debugIdPostfix, {
@@ -389,7 +417,7 @@ EOL`,
       // CFN updates UserData in place and the running instance never applies it.
       userDataCausesReplacement: true,
       vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
-      securityGroup: couchSecurityGroup,
+      securityGroup: this.securityGroup,
       instanceType: new ec2.InstanceType(props.instanceType),
     });
 
@@ -436,7 +464,7 @@ EOL`,
 
     // Create the target group for the CouchDB instances
     this.targetGroup = new elb.ApplicationTargetGroup(this, 'CouchTG', {
-      port: this.couchInternalPort,
+      port: this.internalPort,
       protocol: elb.ApplicationProtocol.HTTP,
       targetType: elb.TargetType.INSTANCE,
       healthCheck: {
@@ -445,7 +473,7 @@ EOL`,
         protocol: elb.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
-        port: this.couchInternalPort.toString(),
+        port: this.internalPort.toString(),
         path: '/',
       },
       vpc: props.vpc,
@@ -475,30 +503,43 @@ EOL`,
       ),
     });
 
-    // DEBUG CONFIG
-    // ============
+    // VPC-private DNS so Conductor / workers reach Couch on :5984 without
+    // leaving through the internet-facing ALB. The hostname is stable across
+    // instance replacement; the A record tracks instancePrivateIp (userData
+    // already replaces the instance and refreshes the token).
+    const internalZone = new route53.PrivateHostedZone(
+      this,
+      'CouchInternalZone',
+      {
+        vpc: props.vpc,
+        zoneName: couchInternalZoneName(props.baseDomain),
+        comment: 'VPC-private CouchDB hostname for backend tasks',
+      }
+    );
 
-    // TODO: Handle this through config
-    const debugInstancePermissions = true;
+    new route53.ARecord(this, 'CouchInternalARecord', {
+      zone: internalZone,
+      recordName: 'couchdb',
+      target: route53.RecordTarget.fromIpAddresses(
+        this.instance.instancePrivateIp
+      ),
+      comment: `${this.internalHostname} → Couch EC2 private IP`,
+    });
 
-    if (debugInstancePermissions) {
-      // TODO: Closing inbound 443 blocked connectivity from the API. SSM
-      // Session Manager should only need outbound HTTPS, so find why the API
-      // depends on this rule before removing it again.
-      // For debugging CouchDB instances - allow inbound traffic for SSM Instance Connect
-      couchSecurityGroup.addIngressRule(
-        ec2.Peer.anyIpv4(),
-        ec2.Port.tcp(443),
-        'Allow SSM Instance Connect'
-      );
-
-      // Add SSM Instance Connect permissions to the instance role
-      this.instance.role.addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          'AmazonSSMManagedInstanceCore'
-        )
-      );
-    }
+    // Session Manager (scripts/ssmCouchTunnel.sh) needs the SSM agent IAM
+    // policy and outbound HTTPS. It does not need inbound 443.
+    //
+    // 1c1be2034 restored 0.0.0.0/0 TCP 443 after dab0866d9 removed it:
+    // COUCHDB_INTERNAL_URL still equalled the public HTTPS URL, so every
+    // backend Couch call left the VPC, resolved the public hostname, and
+    // returned through the internet-facing ALB (or the instance public IP).
+    // Closing instance 443 while that was still the configured internal
+    // endpoint broke Conductor connectivity. This change points
+    // COUCHDB_INTERNAL_URL at the VPC hostname on :5984 in the same
+    // deploy, so inbound 443 is unused and is not reopened.
+    this.instance.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')
+    );
 
     // IAM PERMISSIONS
     // ==================
@@ -514,10 +555,12 @@ EOL`,
     // NETWORK SECURITY
     // ================
 
-    // Allow inbound traffic from the ALB to the CouchDB instances
-    couchSecurityGroup.connections.allowFrom(
+    // Allow inbound traffic from the ALB to the CouchDB instances.
+    // Conductor / spatial-worker / capacity-manager / TTL-cleanup 5984 is
+    // attached in FaimsInfraStack after the shared task security group exists.
+    this.securityGroup.connections.allowFrom(
       props.sharedBalancer.alb,
-      ec2.Port.tcp(this.couchInternalPort),
+      ec2.Port.tcp(this.internalPort),
       'Allow traffic from ALB to CouchDB instances'
     );
 

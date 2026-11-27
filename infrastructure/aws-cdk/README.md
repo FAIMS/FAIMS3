@@ -25,18 +25,23 @@ The `EC2CouchDB` construct deploys CouchDB:
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
-- **DNS**: Creates a custom domain for CouchDB access.
+- **Public DNS**: Alias record for the public Couch hostname (`db.<baseDomain>`) targeting the internet-facing ALB. Devices keep using this HTTPS URL (`COUCHDB_PUBLIC_URL`, stamped as listing `dataDb.base_url`).
+- **VPC-private DNS**: A Route 53 private hosted zone `internal.<baseDomain>` associated with the stack VPC, plus an A record `couchdb.internal.<baseDomain>` → the instance private IP. Backend tasks use `COUCHDB_INTERNAL_URL=http://couchdb.internal.<baseDomain>:5984` (plain HTTP on 5984; TLS already terminates at the ALB for the public hop).
+- **Instance ingress**: TCP 5984 from the shared ALB security group and from the Conductor task security group (shared by Conductor, spatial worker, capacity manager, and TTL cleanup). No `0.0.0.0/0` on 443 or 5984. `AmazonSSMManagedInstanceCore` stays on the instance role for `scripts/ssmCouchTunnel.sh`.
+
+Laptop processes cannot resolve `couchdb.internal.<baseDomain>`. After `env-from-cdk-stack.sh` copies ECS task env, set `COUCHDB_INTERNAL_URL` to the same value as `COUCHDB_PUBLIC_URL` for laptop scripts (Couch is still on the public ALB, which is how laptop migrate worked before). When couch-auth-proxy is deployed, the public URL is a proxy — laptop scripts must then reach the internal Couch via `scripts/ssmCouchTunnel.sh` (`http://127.0.0.1:5984`) so they talk to the same service Conductor uses. Leave `COUCHDB_PUBLIC_URL` as the public HTTPS hostname.
 
 ### Conductor (API Service)
 
 The `FaimsConductor` construct sets up the API service:
 
 - **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
-- **Task Definition**: Configures the container with environment variables and secrets.
+- **Task Definition**: Configures the container with environment variables and secrets. `COUCHDB_PUBLIC_URL` is the public ALB HTTPS URL; `COUCHDB_INTERNAL_URL` is the VPC HTTP URL above. Spatial worker, capacity manager, and TTL cleanup reuse `conductor.environment` and do not overlay a second Couch URL.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
 - **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
 - **DNS**: Creates a custom domain for the Conductor API.
+- **Couch access**: Admin-credentialed Nano/Pouch/migrate/worker calls stay inside the VPC on :5984. They must not hairpin through the public ALB. The unauthenticated Conductor `/` fallback page renders `COUCHDB_PUBLIC_URL` and public-safe status (reachable / missing databases), not operator diagnostics that include the VPC hostname.
 
 ### Frontend
 

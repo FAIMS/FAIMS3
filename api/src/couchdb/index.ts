@@ -13,7 +13,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
-  couchInitialiser,
+  applyVersionedInitialisation,
   DATABASE_TYPE,
   DatabaseInterface,
   DatabaseType,
@@ -37,6 +37,7 @@ import {
   ProjectDataDbRef,
   registerDbAtCurrentVersion,
   unregisterDbMigrationDoc,
+  unregisterDbSetupDoc,
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
@@ -48,12 +49,18 @@ import {
   TeamsDB,
   TemplateDB,
   TombstoneDB,
+  type DbSetupDiagnostics,
+  type DbSetupEvent,
+  type DbSetupType,
+  type InitialisationContent,
 } from '@faims3/data-model';
 import Nano from 'nano';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {config} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {createDbSetupRunLogger, handleDbSetupEvent} from './dbSetupLog';
 import {getAllProjectsListing} from './notebooks';
+import type {StartupMigrationLockStore} from './startupMigrationLock';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -93,6 +100,16 @@ const pouchOptions = () => {
 
 export type CouchDBConnectionResult = {
   valid: boolean;
+  /**
+   * HEAD to Couch succeeded. GET `/` uses this instead of interpolating
+   * {@link server_msg}, which may include the internal Couch URL.
+   */
+  canReachServer: boolean;
+  /** Required DB names that returned not_found. */
+  missingDatabases: string[];
+  /** Required DB names whose info() call threw. */
+  unreachableDatabases: string[];
+  /** Operator diagnostic; may include the internal Couch URL. */
   server_msg?: string;
   database_errors?: string[];
   validate_error?: string;
@@ -100,6 +117,9 @@ export type CouchDBConnectionResult = {
 
 export const databaseValidityReport: CouchDBConnectionResult = {
   valid: true,
+  canReachServer: true,
+  missingDatabases: [],
+  unreachableDatabases: [],
   server_msg: '',
   database_errors: [],
   validate_error: '',
@@ -108,6 +128,9 @@ export const databaseValidityReport: CouchDBConnectionResult = {
 export const verifyCouchDBConnection = async () => {
   const result = databaseValidityReport;
   result.valid = true;
+  result.canReachServer = true;
+  result.missingDatabases = [];
+  result.unreachableDatabases = [];
   result.server_msg = '';
   result.database_errors = [];
   result.validate_error = '';
@@ -126,6 +149,7 @@ export const verifyCouchDBConnection = async () => {
 
   if (!response) {
     result.valid = false;
+    result.canReachServer = false;
     result.server_msg =
       `Unable to connect to CouchDB server at ${url}` +
       (result.server_msg ? ` (${result.server_msg})` : '');
@@ -148,10 +172,12 @@ export const verifyCouchDBConnection = async () => {
       const info = (await dbInstance.info()) as any; // type does not include error
       if (info.error === 'not_found') {
         result.valid = false;
+        result.missingDatabases.push(db);
         result.database_errors?.push(`Database ${db} not found`);
       }
     } catch (error: unknown) {
       result.valid = false;
+      result.unreachableDatabases.push(db);
       const detail = error instanceof Error ? error.message : String(error);
       result.database_errors?.push(
         `Unable to connect to CouchDB database ${db}: ${detail}`
@@ -285,6 +311,26 @@ export const getMigrationDb = (): MigrationsDB => {
   return _migrationsDB;
 };
 
+/**
+ * The migrations DB holds the startup lock, the notebook schema marker and
+ * db-setup records as well as version records, while {@link MigrationsDB}
+ * types it as version records only. Structurally satisfies every store type
+ * that reads or writes those other kinds.
+ */
+export type MigrationsDbStore = StartupMigrationLockStore & {
+  get: (id: string) => Promise<unknown>;
+  put: (doc: unknown) => Promise<unknown>;
+  post: (doc: unknown) => Promise<{id: string}>;
+  remove: (doc: {_id: string; _rev: string}) => Promise<unknown>;
+  allDocs: (opts: {include_docs: boolean}) => Promise<{
+    rows: Array<{id: string; doc?: unknown}>;
+  }>;
+};
+
+/** {@link getMigrationDb} typed for every document kind it holds. */
+export const getMigrationDbStore = (): MigrationsDbStore =>
+  getMigrationDb() as unknown as MigrationsDbStore;
+
 export const getInvitesDB = (): DatabaseInterface => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
@@ -371,18 +417,23 @@ export const getDataDb = async (
     );
   }
 
+  return openDataDbForProject(projectDoc);
+};
+
+/**
+ * Opens a project's data DB from a project document (or listing row) the
+ * caller already holds, without re-reading the projects DB.
+ */
+export const openDataDbForProject = (
+  project: ProjectDataDbRef
+): DatabaseInterface<ProjectDataObject> => {
   // Now get the metadata DB from the project document (and be backwards
   // compatible)
-  let db: PossibleConnectionInfo;
-  db = projectDoc.dataDb;
+  const db = project.dataDb ?? project.data_db;
   if (!db) {
-    const doc = projectDoc as any;
-    db = doc.data_db;
-    if (!db) {
-      throw new Exceptions.InternalSystemError(
-        "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
-      );
-    }
+    throw new Exceptions.InternalSystemError(
+      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+    );
   }
 
   // Build the pouch connection for this DB
@@ -473,10 +524,21 @@ const DATA_DB_MIGRATION_CONCURRENCY = 4;
  */
 export const initialiseDataDb = async ({
   projectId,
+  project,
   force = false,
+  forceSetup = false,
+  onSetupEvent,
+  setupDiagnostics,
 }: {
   projectId: string;
+  // Already-loaded project document or listing row; read from the projects
+  // DB when omitted
+  project?: ProjectDataDbRef;
   force?: boolean;
+  // Push design/security even when the db-setup record says up to date
+  forceSetup?: boolean;
+  onSetupEvent?: (event: DbSetupEvent) => void;
+  setupDiagnostics?: DbSetupDiagnostics;
 }): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
@@ -486,13 +548,27 @@ export const initialiseDataDb = async ({
   );
 
   // Get the metadata DB
-  const dataDb = await getDataDb(projectId);
+  const projectDoc = project ?? (await localGetProjectsDb().get(projectId));
+  const dataDb = openDataDbForProject(projectDoc);
+  const dbName = dataDbNameForProject({
+    project: projectDoc,
+    fallbackName: `data-${projectId}`,
+  });
 
   try {
-    await couchInitialiser({
+    // Writes the data DB's db-setup record (design + security) in the
+    // migrations DB. Survey create, restore, and seeds all come through here.
+    await applyVersionedInitialisation({
       db: dataDb,
       content: initDataDB({projectId}),
-      config: {applyPermissions: !isTesting, forceWrite: force},
+      setupType: DatabaseType.DATA,
+      dbName,
+      setupStore: getMigrationDbStore(),
+      applyPermissions: !isTesting,
+      forceDefaultDoc: force,
+      forceSetup,
+      diagnostics: setupDiagnostics,
+      onEvent: onSetupEvent ?? handleDbSetupEvent,
     });
   } catch (e) {
     console.error(
@@ -539,12 +615,27 @@ export const unregisterDataDbMigration = async ({
   project,
 }: {
   project: ProjectDataDbRef;
-}) =>
-  unregisterDbMigrationDoc({
+}) => {
+  const dbName = dataDbNameForProjectRef(project);
+  const removed = await unregisterDbMigrationDoc({
     dbType: DatabaseType.DATA,
-    dbName: dataDbNameForProjectRef(project),
+    dbName,
     migrationDb: getMigrationDb(),
   });
+  try {
+    await unregisterDbSetupDoc({
+      setupType: DatabaseType.DATA,
+      dbName,
+      setupStore: getMigrationDbStore(),
+    });
+  } catch (error) {
+    console.error(
+      `${DB_INIT_LOG} Failed to remove db-setup document for ${dbName}`,
+      error
+    );
+  }
+  return removed;
+};
 
 /**
  * Critical method which initialises all databases, including remotely on the
@@ -563,30 +654,51 @@ export const unregisterDataDbMigration = async ({
  *
  * If pushKeys = true, will update the public keys
  *
+ * If forceSetup = true, design and security documents are pushed (and their
+ * db-setup records rewritten) even when the record says they are up to date.
+ * Recorded versions ahead of this build are still left alone.
+ *
  * @param force Write on clash
  */
 export const initialiseDbAndKeys = async ({
   force = false,
+  forceSetup = false,
   pushKeys = true,
+  onSetupEvent,
+  setupDiagnostics,
 }: {
   force?: boolean;
+  forceSetup?: boolean;
   // Should we push the key configuration?
   pushKeys?: boolean;
+  onSetupEvent?: (event: DbSetupEvent) => void;
+  setupDiagnostics?: DbSetupDiagnostics;
 }) => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
+  const ownedLog = onSetupEvent ? undefined : createDbSetupRunLogger();
+  const onEvent = onSetupEvent ?? ownedLog!.onEvent;
 
-  console.log(`${DB_INIT_LOG} Starting (force=${force}, pushKeys=${pushKeys})`);
+  console.log(
+    `${DB_INIT_LOG} Starting (force=${force}, forceSetup=${forceSetup}, pushKeys=${pushKeys})`
+  );
 
   // Directory DB includes a default document which establishes identity of
   // this conductor
   const globalDbs: {
+    setupType: DbSetupType;
     dbName: string;
     db: DatabaseInterface;
-    content: ReturnType<typeof initAuthDB>;
+    content: InitialisationContent;
   }[] = [
-    {dbName: AUTH_DB_NAME, db: getAuthDB(), content: initAuthDB({})},
     {
+      setupType: DatabaseType.AUTH,
+      dbName: AUTH_DB_NAME,
+      db: getAuthDB(),
+      content: initAuthDB({}),
+    },
+    {
+      setupType: DatabaseType.DIRECTORY,
       dbName: DIRECTORY_DB_NAME,
       db: getDirectoryDB(),
       content: initDirectoryDB({
@@ -600,29 +712,49 @@ export const initialiseDbAndKeys = async ({
       }),
     },
     {
+      setupType: DatabaseType.PROJECTS,
       dbName: PROJECTS_DB_NAME,
       db: localGetProjectsDb(),
       content: initProjectsDB({}),
     },
     {
+      setupType: DatabaseType.TEMPLATES,
       dbName: TEMPLATES_DB_NAME,
       db: getTemplatesDb(),
       content: initTemplatesDB({}),
     },
-    {dbName: PEOPLE_DB_NAME, db: getUsersDB(), content: initPeopleDB({})},
-    {dbName: INVITE_DB_NAME, db: getInvitesDB(), content: initInvitesDB({})},
-    {dbName: TEAMS_DB_NAME, db: getTeamsDB(), content: initTeamsDB({})},
     {
+      setupType: DatabaseType.PEOPLE,
+      dbName: PEOPLE_DB_NAME,
+      db: getUsersDB(),
+      content: initPeopleDB({}),
+    },
+    {
+      setupType: DatabaseType.INVITES,
+      dbName: INVITE_DB_NAME,
+      db: getInvitesDB(),
+      content: initInvitesDB({}),
+    },
+    {
+      setupType: DatabaseType.TEAMS,
+      dbName: TEAMS_DB_NAME,
+      db: getTeamsDB(),
+      content: initTeamsDB({}),
+    },
+    {
+      setupType: DatabaseType.MAP_ASSETS,
       dbName: MAP_ASSETS_DB_NAME,
       db: getMapAssetsDB(),
       content: initMapAssetsDB({}),
     },
     {
+      setupType: DatabaseType.TOMBSTONE,
       dbName: TOMBSTONE_DB_NAME,
       db: getTombstoneDB(),
       content: initTombstoneDB({}),
     },
     {
+      setupType: 'MIGRATIONS',
       dbName: MIGRATIONS_DB_NAME,
       db: getMigrationDb(),
       content: initMigrationsDB({}),
@@ -635,50 +767,84 @@ export const initialiseDbAndKeys = async ({
       .join(', ')}`
   );
 
-  // Global DBs do not depend on each other at init time, so they are written
-  // side by side. All of them are done before the project listing is read
-  // below. The first failure still aborts initialisation.
-  await mapWithConcurrencyLimit({
-    items: globalDbs,
-    concurrency: DB_INIT_CONCURRENCY,
-    mapper: async ({dbName, db, content}) => {
-      const designIds = content.designDocuments.map(doc => doc._id).join(', ');
-      console.log(
-        `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
-          designIds ? `: ${designIds}` : ''
-        }${content.defaultDocument ? ', default document' : ''}, force=${force})`
+  const initGlobal = async ({
+    setupType,
+    dbName,
+    db,
+    content,
+  }: (typeof globalDbs)[number]) => {
+    const designIds = content.designDocuments.map(doc => doc._id).join(', ');
+    console.log(
+      `${DB_INIT_LOG} Initialising global DB ${dbName} (${content.designDocuments.length} design doc(s)${
+        designIds ? `: ${designIds}` : ''
+      }${content.defaultDocument ? ', default document' : ''}, force=${force}, forceSetup=${forceSetup})`
+    );
+    try {
+      await applyVersionedInitialisation({
+        db,
+        content,
+        setupType,
+        dbName,
+        setupStore: getMigrationDbStore(),
+        applyPermissions: !isTesting,
+        forceDefaultDoc: force,
+        forceSetup,
+        diagnostics: setupDiagnostics,
+        onEvent,
+      });
+    } catch (e) {
+      console.error(
+        `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
+        e
       );
-      try {
-        await couchInitialiser({
-          db,
-          content,
-          config: {applyPermissions: !isTesting, forceWrite: force},
-        });
-      } catch (e) {
-        console.error(
-          `${DB_INIT_LOG} Failed to initialise global DB ${dbName}`,
-          e
-        );
-        throw new Exceptions.InternalSystemError(
-          `An error occurred while initialising the ${dbName} database!...` + e
-        );
-      }
-    },
-  });
+      throw new Exceptions.InternalSystemError(
+        `An error occurred while initialising the ${dbName} database!...` + e
+      );
+    }
+  };
 
-  // For each project, ensure the data DBs are also initialised/synced
-  const projects = await getAllProjectsListing();
-  console.log(
-    `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs (up to ${DB_INIT_CONCURRENCY} at a time)`
+  // Migrations DB first so its design docs (kind-aware views) and its own
+  // db-setup record exist before other databases write setup docs into it.
+  const migrationsEntry = globalDbs.find(
+    entry => entry.setupType === 'MIGRATIONS'
   );
+  const otherGlobalDbs = globalDbs.filter(
+    entry => entry.setupType !== 'MIGRATIONS'
+  );
+  try {
+    if (migrationsEntry) {
+      await initGlobal(migrationsEntry);
+    }
+    await mapWithConcurrencyLimit({
+      items: otherGlobalDbs,
+      concurrency: DB_INIT_CONCURRENCY,
+      mapper: initGlobal,
+    });
 
-  // One data DB per project, each independent of the others. The first
-  // failure still aborts initialisation.
-  await mapWithConcurrencyLimit({
-    items: projects,
-    concurrency: DB_INIT_CONCURRENCY,
-    mapper: project => initialiseDataDb({projectId: project._id, force}),
-  });
+    // For each project, ensure the data DBs are also initialised/synced
+    const projects = await getAllProjectsListing();
+    console.log(
+      `${DB_INIT_LOG} Found ${projects.length} project(s); initialising data DBs (up to ${DB_INIT_CONCURRENCY} at a time)`
+    );
+
+    // One data DB per project, each independent of the others. The first
+    // failure still aborts initialisation.
+    await mapWithConcurrencyLimit({
+      items: projects,
+      concurrency: DB_INIT_CONCURRENCY,
+      mapper: project =>
+        initialiseDataDb({
+          projectId: project._id,
+          project,
+          force,
+          forceSetup,
+          onSetupEvent: onEvent,
+          setupDiagnostics,
+        }),
+    });
+  } finally {
+    ownedLog?.flush();
+  }
 
   if (pushKeys) {
     console.log(`${DB_INIT_LOG} Pushing JWT key configuration`);
@@ -759,17 +925,34 @@ export const migrateAllProjectDataDbs = async () => {
  *
  * Used by `pnpm migrate-with-keys` and by API startup (the latter
  * serialises this call behind the startup migration lock when
- * `STARTUP_MIGRATION_LOCK_ENABLED` is on).
+ * `STARTUP_MIGRATION_LOCK_ENABLED` is on). The manual scripts pass
+ * `forceSetup`; startup does not, and trusts the db-setup records.
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
+  forceSetup = false,
   pushKeys = true,
+  setupDiagnostics,
 }: {
   force?: boolean;
+  // Push design/security even when db-setup records say up to date
+  forceSetup?: boolean;
   // Should we push the key configuration?
   pushKeys?: boolean;
+  setupDiagnostics?: DbSetupDiagnostics;
 }) => {
-  await initialiseDbAndKeys({force, pushKeys});
+  const setupLog = createDbSetupRunLogger();
+  try {
+    await initialiseDbAndKeys({
+      force,
+      forceSetup,
+      pushKeys,
+      onSetupEvent: setupLog.onEvent,
+      setupDiagnostics,
+    });
+  } finally {
+    setupLog.flush();
+  }
 
   let dbs: {dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface}[] = [
     {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
