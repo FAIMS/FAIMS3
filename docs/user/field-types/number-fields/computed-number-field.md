@@ -84,8 +84,22 @@ only the final result must be a number. For example,
 
 Referenced fields are normally in the same form as the Computed Number;
 fields on the record's parent can also be referenced (see below). A
-Computed Number cannot reference another computed field or a Templated
-String in the same form.
+Computed Number can reference other Computed Number and Computed Text
+fields in the same form, and the field picker lists them. It cannot
+reference a Templated String in the same form.
+
+### Referencing Other Computed Fields
+
+A computed field can build on another computed field in the same form,
+for example a `Volume` field of `{Area} * {Depth}` where `Area` is itself
+a Computed Number. The fields are worked out in dependency order, so the
+order they appear in the form does not matter. If a field the expression
+depends on is blank, this field is blank too.
+
+Computed fields cannot depend on each other in a circle. If `Area`
+references `Volume` and `Volume` references `Area`, the Editor shows a
+**Circular reference** error on each field, naming the chain, and those
+fields stay blank for data collectors until the circle is removed.
 
 ### Referencing Parent Record Values
 
@@ -96,14 +110,15 @@ fields on the record's parent by prefixing the field's reference with
 **Insert parent field** picker below the expression lists the available
 parent fields by Field Heading.
 
-Parent references are type checked like any other reference, and —
-unlike same-form references — may point at the parent's computed fields
-and Templated Strings. A referenced computed field gives its current
+Parent references are type checked like any other reference. They may
+point at the parent's computed fields and, unlike same-form references,
+at its Templated Strings. A referenced computed field gives its current
 value; a referenced Templated String gives its stored value.
 
-If a record has no parent, a parent reference has no value and the
-result stays blank, matching the behaviour for missing same-form
-values. The computed value is worked out from the parent's current
+If a record has no parent, or its parent has been deleted, a parent
+reference has no value and the result stays blank, matching the
+behaviour for missing same-form values. The computed value is worked
+out from the parent's current
 values when the record is viewed and in CSV and spatial exports, so a
 change to the parent shows without reopening the record. The value is
 also stored on save.
@@ -131,10 +146,18 @@ Child-relation fields, cannot be referenced this way (children
 reference their parent with `_PARENT.`); the editor reports these with
 a specific error.
 
-If nothing is linked, the reference has no value and the result stays
-blank. The value updates while editing whenever the link is changed.
-When the linked record itself changes, the value shows the change the
-next time this record is viewed, without reopening it for editing.
+If nothing is linked, or the linked record has been deleted, the
+reference has no value and the result stays blank. The value updates
+while editing whenever the link is changed. When the linked record
+itself changes, the value shows the change the next time this record is
+viewed, without reopening it for editing.
+
+A parent or linked record's computed field can itself reference another
+record, forming a chain. A chain is followed for up to ten links; past
+that, the stored value of the furthest record is used. A field that
+references the same field on another record of the same form (for
+example a running level that adds to the previous sample's level) has
+no starting value, so it stays blank.
 
 The same reference can be used in
 [field and section conditions](../../authoring/conditions.md).
