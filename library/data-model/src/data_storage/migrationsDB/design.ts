@@ -21,30 +21,60 @@ export const MIGRATIONS_BY_STATUS_INDEX = `${INDEX_DOCUMENT_NAME}/${MIGRATIONS_B
 const indexDocument = {
   _id: `_design/${INDEX_DOCUMENT_NAME}`,
   views: {
+    // Each map duplicates isMigrationVersionRecord: Couch map functions
+    // cannot import. Emit only per-database version records (kind missing
+    // or 'db-version', with dbType/dbName/version/migrationLog). Other
+    // migrations-DB documents (lock, notebook marker, db-setup) are skipped
+    // even when they reuse those field names.
     [MIGRATIONS_BY_DB_TYPE_INDEX_POSTFIX]: {
       map: convertToCouchDBString(doc => {
-        if (doc.dbType !== undefined) {
+        if (
+          (doc.kind === undefined || doc.kind === 'db-version') &&
+          typeof doc.dbType === 'string' &&
+          typeof doc.dbName === 'string' &&
+          typeof doc.version === 'number' &&
+          Array.isArray(doc.migrationLog)
+        ) {
           emit(doc.dbType, 1);
         }
       }),
     },
     [MIGRATIONS_BY_DB_NAME_INDEX_POSTFIX]: {
       map: convertToCouchDBString(doc => {
-        if (doc.dbName !== undefined) {
+        if (
+          (doc.kind === undefined || doc.kind === 'db-version') &&
+          typeof doc.dbType === 'string' &&
+          typeof doc.dbName === 'string' &&
+          typeof doc.version === 'number' &&
+          Array.isArray(doc.migrationLog)
+        ) {
           emit(doc.dbName, 1);
         }
       }),
     },
     [MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX_POSTFIX]: {
       map: convertToCouchDBString(doc => {
-        if (doc.dbType !== undefined && doc.dbName !== undefined) {
+        if (
+          (doc.kind === undefined || doc.kind === 'db-version') &&
+          typeof doc.dbType === 'string' &&
+          typeof doc.dbName === 'string' &&
+          typeof doc.version === 'number' &&
+          Array.isArray(doc.migrationLog)
+        ) {
           emit([doc.dbType, doc.dbName], 1);
         }
       }),
     },
     [MIGRATIONS_BY_STATUS_INDEX_POSTFIX]: {
       map: convertToCouchDBString(doc => {
-        if (doc.status !== undefined) {
+        if (
+          (doc.kind === undefined || doc.kind === 'db-version') &&
+          typeof doc.dbType === 'string' &&
+          typeof doc.dbName === 'string' &&
+          typeof doc.version === 'number' &&
+          Array.isArray(doc.migrationLog) &&
+          typeof doc.status === 'string'
+        ) {
           emit(doc.status, 1);
         }
       }),

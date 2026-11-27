@@ -169,7 +169,10 @@ export class FaimsNetworking extends Construct {
   constructor(scope: Construct, id: string, props: FaimsNetworkingProps) {
     super(scope, id);
 
-    // Setup basic VPC with some public subnet(s) as per default
+    // Setup basic VPC with some public subnet(s) as per default.
+    // DNS support and DNS hostnames stay at the CDK Vpc defaults (both on)
+    // so the Couch private hosted zone resolves inside the VPC. No NAT:
+    // tasks stay in public subnets with assignPublicIp.
     this.vpc = new Vpc(this, 'vpc', {
       // At least 2 needed for LB
       maxAzs: 2,

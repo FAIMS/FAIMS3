@@ -14,6 +14,7 @@
  *   pnpm debug-migration-lock status --json
  *   pnpm debug-migration-lock unlock --yes
  *   pnpm debug-migration-lock set-version people 4 --yes --reason='re-run v4→v5'
+ *   pnpm debug-migration-lock reset-notebook-marker --yes
  *
  * Environment: same as other API scripts (`COUCHDB_INTERNAL_URL`,
  * `COUCHDB_USER` / `COUCHDB_PASSWORD`, lock timeout). Does not start
@@ -24,19 +25,47 @@ import {hostname} from 'node:os';
 import * as readline from 'node:readline';
 import {
   assessNotebookSchemaCompatibility,
+  compareNotebookSchemaSemver,
+  contentForSetupType,
   CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
   DATABASE_TYPES,
   DatabaseType,
   DB_MIGRATIONS,
+  DB_SETUP_TYPES,
+  DB_SETUP_VERSIONS,
+  decideSetupAction,
+  hashDesignDocuments,
+  hashSecurityDocument,
   DB_TARGET_VERSIONS,
+  isDbSetupDoc,
+  isDbSetupType,
+  isMigrationVersionRecord,
+  isNotebookSchemaSemver,
+  isNotebookUiSchemaMarker,
+  isPouchConflict,
+  isPouchNotFound,
+  NOTEBOOK_UI_SCHEMA_MARKER_ID,
+  NOTEBOOK_UI_SCHEMA_MARKER_KIND,
   type DATABASE_TYPE,
+  type DbSetupDoc,
+  type DbSetupPart,
+  type DbSetupType,
   type MigrationLog,
   type MigrationsDBDocument,
   type MigrationsDBFields,
+  type NotebookUiSchemaMarkerDoc,
+  type SetupAction,
 } from '@faims3/data-model';
 import {config} from '../src/buildconfig';
-import {getMigrationDb, verifyCouchDBConnection} from '../src/couchdb';
+import {
+  getDbById,
+  getMigrationDb,
+  getMigrationDbStore,
+  verifyCouchDBConnection,
+} from '../src/couchdb';
 import {getAllProjectsListing} from '../src/couchdb/notebooks';
+import {readNotebookSchemaMarker} from '../src/couchdb/notebookSchemaMarker';
+import {getStartupMigrationFingerprint} from '../src/couchdb/startupMigrationFingerprint';
 import {
   STARTUP_MIGRATION_LOCK_ID,
   type StartupMigrationLockAttempt,
@@ -69,6 +98,18 @@ export const EXPECTED_GLOBAL_DBS: ReadonlyArray<{
   {dbType: DatabaseType.TOMBSTONE, dbName: 'tombstone'},
 ];
 
+/** Global databases that should have a db-setup record, including migrations. */
+export const EXPECTED_GLOBAL_SETUPS: ReadonlyArray<{
+  setupType: DbSetupType;
+  dbName: string;
+}> = [
+  ...EXPECTED_GLOBAL_DBS.map(item => ({
+    setupType: item.dbType,
+    dbName: item.dbName,
+  })),
+  {setupType: 'MIGRATIONS', dbName: 'migrations'},
+];
+
 const BOOLEAN_FLAGS = new Set([
   'json',
   'yes',
@@ -79,6 +120,9 @@ const BOOLEAN_FLAGS = new Set([
   'unhealthy',
   'strict',
   'help',
+  'all',
+  'design',
+  'security',
 ]);
 
 const COMMANDS = [
@@ -94,6 +138,9 @@ const COMMANDS = [
   'unregister',
   'targets',
   'notebooks',
+  'reset-notebook-marker',
+  'reset-setup',
+  'verify-setup',
   'watch',
   'help',
 ] as const;
@@ -141,6 +188,16 @@ export type DebuggerCommand =
   | {name: 'unregister'; db: string; type?: DATABASE_TYPE; yes: boolean}
   | {name: 'targets'; json: boolean}
   | {name: 'notebooks'; json: boolean}
+  | {name: 'reset-notebook-marker'; version?: string; yes: boolean}
+  | {
+      name: 'reset-setup';
+      db?: string;
+      all: boolean;
+      part?: DbSetupPart;
+      type?: DbSetupType;
+      yes: boolean;
+    }
+  | {name: 'verify-setup'; db?: string; type?: DbSetupType; json: boolean}
   | {name: 'watch'; intervalMs: number; timeoutMs: number};
 
 /** Persistence used by lock / version mutations. Production passes Couch. */
@@ -201,13 +258,45 @@ export type DbRow = {
 
 export type UnrecognisedDoc = {id: string; hint: string};
 
+export type NotebookMarkerRelation =
+  | 'missing'
+  | 'invalid'
+  | 'current'
+  | 'behind'
+  | 'ahead';
+
+export type NotebookMarkerView = {
+  present: boolean;
+  doc?: NotebookUiSchemaMarkerDoc;
+  target: string;
+  relation: NotebookMarkerRelation;
+  interpretation: string;
+};
+
+export type SetupPartView = {
+  recordedVersion?: number;
+  recordedHash?: string;
+  targetVersion: number;
+  action: SetupAction | 'missing';
+};
+
+export type SetupRow = {
+  id: string;
+  setupType: string;
+  dbName: string;
+  design: SetupPartView;
+  security: SetupPartView;
+};
+
 export type StatusSnapshot = {
   couchUrl: string;
   lockEnabled: boolean;
   timeoutMs: number;
   nowMs: number;
   lock: LockView;
+  notebookMarker: NotebookMarkerView;
   databases: DbRow[];
+  setups: SetupRow[];
   missingExpected: Array<{dbType: string; dbName: string}>;
   unrecognised: UnrecognisedDoc[];
 };
@@ -233,26 +322,6 @@ export type NotebookRow = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function pouchStatus(error: unknown): number | undefined {
-  return isRecord(error) && typeof error.status === 'number'
-    ? error.status
-    : undefined;
-}
-
-function pouchName(error: unknown): string | undefined {
-  return isRecord(error) && typeof error.name === 'string'
-    ? error.name
-    : undefined;
-}
-
-export function isNotFound(error: unknown): boolean {
-  return pouchStatus(error) === 404 || pouchName(error) === 'not_found';
-}
-
-export function isConflict(error: unknown): boolean {
-  return pouchStatus(error) === 409 || pouchName(error) === 'conflict';
 }
 
 function errorMessage(error: unknown): string {
@@ -306,6 +375,16 @@ export function parseDatabaseType(raw: string): DATABASE_TYPE {
   if (!isDatabaseType(upper)) {
     throw new Error(
       `Unknown database type '${raw}'. Use one of: ${DATABASE_TYPES.join(', ')}.`
+    );
+  }
+  return upper;
+}
+
+export function parseSetupType(raw: string): DbSetupType {
+  const upper = raw.trim().toUpperCase();
+  if (!isDbSetupType(upper)) {
+    throw new Error(
+      `Unknown setup type '${raw}'. Use one of: ${DB_SETUP_TYPES.join(', ')}.`
     );
   }
   return upper;
@@ -399,13 +478,16 @@ export function parseArgs(argv: string[]): DebuggerCommand {
   const rest = positionals.slice(1);
   if (!COMMANDS.includes(commandName as DebuggerCommandName)) {
     throw new Error(
-      `Unknown command '${commandName}'. Use status, lock, unlock, delete-lock, claim, dbs, show, set-version, set-health, unregister, targets, notebooks, or watch.`
+      `Unknown command '${commandName}'. Use status, lock, unlock, delete-lock, claim, dbs, show, set-version, set-health, unregister, targets, notebooks, reset-notebook-marker, reset-setup, verify-setup, or watch.`
     );
   }
   const command = commandName as DebuggerCommandName;
 
   const typeRaw = flagString(flags, 'type');
-  const type = typeRaw ? parseDatabaseType(typeRaw) : undefined;
+  // reset-setup / verify-setup accept DbSetupType (includes MIGRATIONS).
+  const usesSetupType = command === 'reset-setup' || command === 'verify-setup';
+  const type =
+    typeRaw && !usesSetupType ? parseDatabaseType(typeRaw) : undefined;
   const json = flagBool(flags, 'json');
   const yes = flagBool(flags, 'yes');
   const force = flagBool(flags, 'force');
@@ -480,6 +562,60 @@ export function parseArgs(argv: string[]): DebuggerCommand {
       return {name: 'targets', json};
     case 'notebooks':
       return {name: 'notebooks', json};
+    case 'reset-notebook-marker': {
+      const version = rest[0];
+      if (version !== undefined && !isNotebookSchemaSemver(version)) {
+        throw new Error(
+          `reset-notebook-marker version must be MAJOR.MINOR.PATCH, got '${version}'.`
+        );
+      }
+      return {name: 'reset-notebook-marker', version, yes};
+    }
+    case 'reset-setup': {
+      const all = flagBool(flags, 'all');
+      const design = flagBool(flags, 'design');
+      const security = flagBool(flags, 'security');
+      if (design && security) {
+        throw new Error(
+          'reset-setup accepts at most one of --design or --security.'
+        );
+      }
+      const setupTypeRaw = flagString(flags, 'type');
+      if (all) {
+        if (rest[0] !== undefined) {
+          throw new Error('reset-setup --all does not take a database name.');
+        }
+        return {
+          name: 'reset-setup',
+          all: true,
+          part: design ? 'design' : security ? 'security' : undefined,
+          type: setupTypeRaw ? parseSetupType(setupTypeRaw) : undefined,
+          yes,
+        };
+      }
+      if (rest[0] === undefined) {
+        throw new Error(
+          'reset-setup requires a database name, or --all to clear every setup record.'
+        );
+      }
+      return {
+        name: 'reset-setup',
+        db: rest[0],
+        all: false,
+        part: design ? 'design' : security ? 'security' : undefined,
+        type: setupTypeRaw ? parseSetupType(setupTypeRaw) : undefined,
+        yes,
+      };
+    }
+    case 'verify-setup': {
+      const setupTypeRaw = flagString(flags, 'type');
+      return {
+        name: 'verify-setup',
+        db: rest[0],
+        type: setupTypeRaw ? parseSetupType(setupTypeRaw) : undefined,
+        json,
+      };
+    }
     case 'watch':
       return {
         name: 'watch',
@@ -515,6 +651,14 @@ Commands:
   unregister <db>        Delete the version document (next migrate rediscovers)
   targets                Expected versions and registered migration steps
   notebooks              Project/template uiSpec versions vs this build
+  reset-notebook-marker [x.y.z]
+                         Delete the notebook UI-schema marker, or set it to
+                         x.y.z. Use after a deliberate rollback: a marker
+                         newer than the running build makes it skip boot
+                         migrate after a foreign lock settlement.
+  reset-setup <db>|--all Clear a db-setup record so the next migrate pushes
+                         design/security. --design / --security clear one part.
+  verify-setup [db]      Compare stored design/security docs with this build.
   watch                  Poll the lock until it is missing or settled
 
 Common options:
@@ -524,7 +668,9 @@ Common options:
   --reason='…'           Audit note stored on unlock / set-version
   --force                unlock: rewrite an already-settled lock
                          claim: steal a still-live running lock
-  --strict               status: exit 1 if lock is running or any DB is not current
+  --strict               status: exit 1 if lock is running, any DB is not
+                         current, the notebook marker is ahead, or a db-setup
+                         version is ahead
   --behind / --ahead / --unhealthy
                          Filter dbs listing
   --create               set-version: create a missing version document
@@ -538,19 +684,18 @@ Examples:
   pnpm debug-migration-lock unlock --status=failed --reason='crashed doer' --yes
   pnpm debug-migration-lock set-version people 4 --yes --reason='re-run people v4→v5'
   pnpm debug-migration-lock set-version teams 1 --create --type=TEAMS --yes
+  pnpm debug-migration-lock reset-notebook-marker 1.0.0 --yes
+  pnpm debug-migration-lock reset-setup people --yes
+  pnpm debug-migration-lock reset-setup --all --yes
+  pnpm debug-migration-lock verify-setup
 `;
 }
 
 export function isMigrationDoc(doc: unknown): doc is MigrationsDBDocument {
-  if (!isRecord(doc)) {
-    return false;
-  }
   return (
-    typeof doc.dbType === 'string' &&
-    typeof doc.dbName === 'string' &&
-    typeof doc.version === 'number' &&
-    (doc.status === 'healthy' || doc.status === 'not-healthy') &&
-    Array.isArray(doc.migrationLog)
+    isMigrationVersionRecord(doc) &&
+    typeof doc._rev === 'string' &&
+    (doc.status === 'healthy' || doc.status === 'not-healthy')
   );
 }
 
@@ -663,6 +808,57 @@ export function classifyLock(
   };
 }
 
+export function classifyNotebookMarker(
+  doc: NotebookUiSchemaMarkerDoc | null,
+  target: string = CURRENT_NOTEBOOK_UI_SCHEMA_VERSION
+): NotebookMarkerView {
+  if (!doc) {
+    return {
+      present: false,
+      target,
+      relation: 'missing',
+      interpretation:
+        'No marker. The next boot doer (any build) writes it after the notebook walk; until then notebook schema cannot make a replica skip migrate.',
+    };
+  }
+  const version = doc.schemaVersion;
+  if (!isNotebookSchemaSemver(version) || !isNotebookSchemaSemver(target)) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'invalid',
+      interpretation: `Marker version '${String(version)}' is not MAJOR.MINOR.PATCH. The ahead check ignores it and the next doer overwrites it.`,
+    };
+  }
+  const cmp = compareNotebookSchemaSemver(version, target);
+  if (cmp > 0) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'ahead',
+      interpretation: `Marker ${version} is newer than this build (${target}). After a foreign lock settlement this build skips boot migrate. After a deliberate rollback, run reset-notebook-marker.`,
+    };
+  }
+  if (cmp < 0) {
+    return {
+      present: true,
+      doc,
+      target,
+      relation: 'behind',
+      interpretation: `Marker ${version} is older than this build (${target}). The next doer on this build raises it.`,
+    };
+  }
+  return {
+    present: true,
+    doc,
+    target,
+    relation: 'current',
+    interpretation: 'A build targeting this version has run the notebook walk.',
+  };
+}
+
 function lastMigration(
   log: MigrationLog[] | undefined
 ): DbRow['lastMigration'] {
@@ -730,25 +926,46 @@ export async function readLock(
     const doc = await db.get(STARTUP_MIGRATION_LOCK_ID);
     return isLockDoc(doc) ? doc : null;
   } catch (error) {
-    if (isNotFound(error)) {
+    if (isPouchNotFound(error)) {
       return null;
     }
     throw error;
   }
 }
 
+export async function readNotebookMarker(
+  db: DebuggerDb
+): Promise<NotebookUiSchemaMarkerDoc | null> {
+  return readNotebookSchemaMarker(db);
+}
+
 export async function loadMigrationsDb(db: DebuggerDb): Promise<{
   lock: StartupMigrationLockDoc | null;
+  notebookMarker: NotebookUiSchemaMarkerDoc | null;
   databases: MigrationsDBDocument[];
+  setups: DbSetupDoc[];
   unrecognised: UnrecognisedDoc[];
 }> {
   const result = await db.allDocs({include_docs: true});
   let lock: StartupMigrationLockDoc | null = null;
+  let notebookMarker: NotebookUiSchemaMarkerDoc | null = null;
   const databases: MigrationsDBDocument[] = [];
+  const setups: DbSetupDoc[] = [];
   const unrecognised: UnrecognisedDoc[] = [];
 
   for (const row of result.rows) {
     if (row.id.startsWith('_design/')) {
+      continue;
+    }
+    if (row.id === NOTEBOOK_UI_SCHEMA_MARKER_ID) {
+      if (isNotebookUiSchemaMarker(row.doc)) {
+        notebookMarker = row.doc;
+      } else {
+        unrecognised.push({
+          id: row.id,
+          hint: 'notebook marker id present but document shape is invalid',
+        });
+      }
       continue;
     }
     if (row.id === STARTUP_MIGRATION_LOCK_ID) {
@@ -762,6 +979,10 @@ export async function loadMigrationsDb(db: DebuggerDb): Promise<{
       }
       continue;
     }
+    if (isDbSetupDoc(row.doc)) {
+      setups.push(row.doc);
+      continue;
+    }
     if (isMigrationDoc(row.doc)) {
       databases.push(row.doc);
       continue;
@@ -773,8 +994,12 @@ export async function loadMigrationsDb(db: DebuggerDb): Promise<{
     const typeCmp = a.dbType.localeCompare(b.dbType);
     return typeCmp !== 0 ? typeCmp : a.dbName.localeCompare(b.dbName);
   });
+  setups.sort((a, b) => {
+    const typeCmp = a.dbType.localeCompare(b.dbType);
+    return typeCmp !== 0 ? typeCmp : a.dbName.localeCompare(b.dbName);
+  });
 
-  return {lock, databases, unrecognised};
+  return {lock, notebookMarker, databases, setups, unrecognised};
 }
 
 export function missingExpectedGlobals(
@@ -788,13 +1013,57 @@ export function missingExpectedGlobals(
   );
 }
 
+export function classifySetupPart(input: {
+  recorded?: {version: number; hash: string};
+  targetVersion: number;
+}): SetupPartView {
+  if (input.recorded === undefined) {
+    return {
+      targetVersion: input.targetVersion,
+      action: 'missing',
+    };
+  }
+  // Status compares versions only. verify-setup checks live hashes.
+  const action = decideSetupAction({
+    recorded: {version: input.recorded.version, hash: 'status'},
+    target: {version: input.targetVersion, hash: 'status'},
+  });
+  return {
+    recordedVersion: input.recorded.version,
+    recordedHash: input.recorded.hash,
+    targetVersion: input.targetVersion,
+    action,
+  };
+}
+
+export function toSetupRow(doc: DbSetupDoc): SetupRow {
+  const targets = isDbSetupType(doc.dbType)
+    ? DB_SETUP_VERSIONS[doc.dbType]
+    : {design: 0, security: 0};
+  return {
+    id: doc._id,
+    setupType: doc.dbType,
+    dbName: doc.dbName,
+    design: classifySetupPart({
+      recorded: doc.design,
+      targetVersion: targets.design,
+    }),
+    security: classifySetupPart({
+      recorded: doc.security,
+      targetVersion: targets.security,
+    }),
+  };
+}
+
 export function collectStatus(options: {
   couchUrl: string;
   lockEnabled: boolean;
   timeoutMs: number;
   nowMs: number;
   lock: StartupMigrationLockDoc | null;
+  notebookMarker?: NotebookUiSchemaMarkerDoc | null;
   databases: MigrationsDBDocument[];
+  setups?: DbSetupDoc[];
   unrecognised: UnrecognisedDoc[];
 }): StatusSnapshot {
   return {
@@ -803,7 +1072,9 @@ export function collectStatus(options: {
     timeoutMs: options.timeoutMs,
     nowMs: options.nowMs,
     lock: classifyLock(options.lock, options.nowMs, options.timeoutMs),
+    notebookMarker: classifyNotebookMarker(options.notebookMarker ?? null),
     databases: options.databases.map(toDbRow),
+    setups: (options.setups ?? []).map(toSetupRow),
     missingExpected: missingExpectedGlobals(options.databases),
     unrecognised: options.unrecognised,
   };
@@ -880,7 +1151,7 @@ async function putLock(
   try {
     await db.put(doc);
   } catch (error) {
-    if (isConflict(error)) {
+    if (isPouchConflict(error)) {
       throw new Error(
         'Conflict writing the lock document (another process updated it). Re-run status and retry.'
       );
@@ -921,6 +1192,12 @@ export async function forceUnlock(options: {
       finishedAtMs: options.nowMs,
       status: options.status,
       error: reason,
+      ...(before.fingerprint !== undefined
+        ? {fingerprint: before.fingerprint}
+        : {}),
+      ...(before.apiVersion !== undefined
+        ? {apiVersion: before.apiVersion}
+        : {}),
     },
   ].slice(-MAX_LOCK_HISTORY);
 
@@ -947,12 +1224,75 @@ export async function deleteLock(options: {db: DebuggerDb}): Promise<{
   return {removed: true, before};
 }
 
+/**
+ * Delete the notebook UI-schema marker (no `schemaVersion`) or overwrite it
+ * with `schemaVersion`, which may be lower than the recorded one. Records
+ * only — notebooks are not touched.
+ */
+export async function resetNotebookMarker(options: {
+  db: DebuggerDb;
+  nowMs: number;
+  instanceId: string;
+  schemaVersion?: string;
+}): Promise<{
+  changed: boolean;
+  before: NotebookUiSchemaMarkerDoc | null;
+  after: NotebookUiSchemaMarkerDoc | null;
+}> {
+  let raw: unknown;
+  try {
+    raw = await options.db.get(NOTEBOOK_UI_SCHEMA_MARKER_ID);
+  } catch (error) {
+    if (!isPouchNotFound(error)) {
+      throw error;
+    }
+  }
+  const rev =
+    isRecord(raw) && typeof raw._rev === 'string' ? raw._rev : undefined;
+  const before = isNotebookUiSchemaMarker(raw) ? raw : null;
+
+  if (options.schemaVersion === undefined) {
+    if (rev === undefined) {
+      return {changed: false, before, after: null};
+    }
+    await options.db.remove({_id: NOTEBOOK_UI_SCHEMA_MARKER_ID, _rev: rev});
+    return {changed: true, before, after: null};
+  }
+
+  if (!isNotebookSchemaSemver(options.schemaVersion)) {
+    throw new Error(
+      `Notebook marker version must be MAJOR.MINOR.PATCH, got '${options.schemaVersion}'.`
+    );
+  }
+  const after: NotebookUiSchemaMarkerDoc = {
+    _id: NOTEBOOK_UI_SCHEMA_MARKER_ID,
+    ...(rev !== undefined ? {_rev: rev} : {}),
+    kind: NOTEBOOK_UI_SCHEMA_MARKER_KIND,
+    schemaVersion: options.schemaVersion,
+    updatedAtMs: options.nowMs,
+    writerId: options.instanceId,
+  };
+  try {
+    await options.db.put(after);
+  } catch (error) {
+    if (isPouchConflict(error)) {
+      throw new Error(
+        'Conflict writing the notebook marker (another process updated it). Re-run status and retry.'
+      );
+    }
+    throw error;
+  }
+  return {changed: true, before, after};
+}
+
 export async function forceClaim(options: {
   db: DebuggerDb;
   nowMs: number;
   instanceId: string;
   timeoutMs: number;
   force?: boolean;
+  fingerprint?: string;
+  apiVersion?: string;
 }): Promise<{
   changed: boolean;
   stolen: boolean;
@@ -972,6 +1312,9 @@ export async function forceClaim(options: {
   }
 
   const stolen = before?.status === 'running';
+  const fingerprint =
+    options.fingerprint ?? (await getStartupMigrationFingerprint());
+  const apiVersion = options.apiVersion ?? config.apiVersion;
   const history = before
     ? stolen
       ? [
@@ -982,6 +1325,12 @@ export async function forceClaim(options: {
             finishedAtMs: options.nowMs,
             status: 'timed_out' as const,
             error: 'admin claim',
+            ...(before.fingerprint !== undefined
+              ? {fingerprint: before.fingerprint}
+              : {}),
+            ...(before.apiVersion !== undefined
+              ? {apiVersion: before.apiVersion}
+              : {}),
           },
         ].slice(-MAX_LOCK_HISTORY)
       : before.history
@@ -997,6 +1346,8 @@ export async function forceClaim(options: {
     updatedAtMs: options.nowMs,
     attempt: (before?.attempt ?? 0) + 1,
     history,
+    fingerprint,
+    apiVersion,
   };
   await putLock(options.db, after);
   return {changed: true, stolen: Boolean(stolen), before, after};
@@ -1150,13 +1501,18 @@ export function filterDbRows(
 
 export function statusIsStrictFailure(snapshot: StatusSnapshot): boolean {
   const summary = summarizeDatabases(snapshot.databases);
+  const setupAhead = snapshot.setups.some(
+    row => row.design.action === 'ahead' || row.security.action === 'ahead'
+  );
   return (
     snapshot.lock.doc?.status === 'running' ||
     summary.behind > 0 ||
     summary.ahead > 0 ||
     summary.unknown > 0 ||
     summary.unhealthy > 0 ||
-    snapshot.missingExpected.length > 0
+    snapshot.missingExpected.length > 0 ||
+    snapshot.notebookMarker.relation === 'ahead' ||
+    setupAhead
   );
 }
 
@@ -1226,6 +1582,12 @@ export function formatLockHuman(lock: LockView, timeoutMs: number): string {
   lines.push(`  Status:      ${doc.status}`);
   lines.push(`  Holder:      ${doc.holderId}`);
   lines.push(`  Attempt:     ${doc.attempt}`);
+  lines.push(
+    `  Fingerprint: ${doc.fingerprint !== undefined ? doc.fingerprint : 'n/a'}`
+  );
+  lines.push(
+    `  API version: ${doc.apiVersion !== undefined ? doc.apiVersion : 'n/a'}`
+  );
   lines.push(`  Started:     ${formatTimestamp(doc.startedAtMs)}`);
   lines.push(`  Updated:     ${formatTimestamp(doc.updatedAtMs)}`);
   if (lock.ageMs !== undefined) {
@@ -1249,13 +1611,74 @@ export function formatLockHuman(lock: LockView, timeoutMs: number): string {
         attempt.finishedAtMs !== undefined
           ? formatDuration(attempt.finishedAtMs - attempt.startedAtMs)
           : 'n/a';
+      const identity =
+        (attempt.fingerprint !== undefined
+          ? `  fingerprint=${attempt.fingerprint}`
+          : '') +
+        (attempt.apiVersion !== undefined
+          ? `  apiVersion=${attempt.apiVersion}`
+          : '');
       lines.push(
-        `    ${index + 1}. ${attempt.status.padEnd(10)} holder=${attempt.holderId}  ${formatTimestamp(attempt.startedAtMs)} → ${formatTimestamp(attempt.finishedAtMs)}  (${duration})` +
+        `    ${index + 1}. ${attempt.status.padEnd(10)} holder=${attempt.holderId}  ${formatTimestamp(attempt.startedAtMs)} → ${formatTimestamp(attempt.finishedAtMs)}  (${duration})${identity}` +
           (attempt.error ? `\n       error=${attempt.error}` : '')
       );
     });
   }
   return lines.join('\n');
+}
+
+export function formatNotebookMarkerHuman(marker: NotebookMarkerView): string {
+  const lines = [
+    `  Present:     ${marker.present ? 'yes' : 'no'}`,
+    `  Target:      ${marker.target}`,
+  ];
+  const doc = marker.doc;
+  if (doc) {
+    lines.push(`  Recorded:    ${String(doc.schemaVersion)}`);
+    lines.push(`  State:       ${marker.relation}`);
+    lines.push(`  Updated:     ${formatTimestamp(doc.updatedAtMs)}`);
+    lines.push(`  Writer:      ${doc.writerId ?? 'n/a'}`);
+    lines.push(`  Fingerprint: ${doc.fingerprint ?? 'n/a'}`);
+    lines.push(`  API version: ${doc.apiVersion ?? 'n/a'}`);
+  }
+  lines.push(`  Note:        ${marker.interpretation}`);
+  return lines.join('\n');
+}
+
+export function formatSetupTable(rows: SetupRow[]): string {
+  if (rows.length === 0) {
+    return '  (none)';
+  }
+  const headers = [
+    'TYPE',
+    'NAME',
+    'DESIGN',
+    'D.TARGET',
+    'D.STATE',
+    'SECURITY',
+    'S.TARGET',
+    'S.STATE',
+  ];
+  const cells = rows.map(row => [
+    row.setupType,
+    row.dbName,
+    row.design.recordedVersion === undefined
+      ? '-'
+      : String(row.design.recordedVersion),
+    String(row.design.targetVersion),
+    row.design.action,
+    row.security.recordedVersion === undefined
+      ? '-'
+      : String(row.security.recordedVersion),
+    String(row.security.targetVersion),
+    row.security.action,
+  ]);
+  const widths = headers.map((header, index) =>
+    Math.max(header.length, ...cells.map(row => row[index].length))
+  );
+  const line = (parts: string[]) =>
+    '  ' + parts.map((part, index) => pad(part, widths[index])).join('  ');
+  return [line(headers), ...cells.map(line)].join('\n');
 }
 
 export function formatStatusHuman(snapshot: StatusSnapshot): string {
@@ -1266,10 +1689,16 @@ export function formatStatusHuman(snapshot: StatusSnapshot): string {
     `  Config:      STARTUP_MIGRATION_LOCK_ENABLED=${snapshot.lockEnabled}  timeout=${formatDuration(snapshot.timeoutMs)}`,
     formatLockHuman(snapshot.lock, snapshot.timeoutMs),
     '',
+    '=== Notebook UI-schema marker ===',
+    formatNotebookMarkerHuman(snapshot.notebookMarker),
+    '',
     '=== Database versions ===',
     formatDbTable(snapshot.databases),
     '',
     `  ${summary.total} db(s): ${summary.current} current, ${summary.behind} behind, ${summary.ahead} ahead, ${summary.unknown} unknown-type, ${summary.unhealthy} unhealthy`,
+    '',
+    '=== Database setup ===',
+    formatSetupTable(snapshot.setups),
   ];
   if (snapshot.missingExpected.length > 0) {
     lines.push(
@@ -1285,6 +1714,143 @@ export function formatStatusHuman(snapshot: StatusSnapshot): string {
     }
   }
   return lines.join('\n');
+}
+
+export function matchSetupDocs(
+  docs: DbSetupDoc[],
+  selector: {db?: string; type?: DbSetupType}
+): DbSetupDoc[] {
+  let matches = docs;
+  if (selector.type) {
+    matches = matches.filter(doc => doc.dbType === selector.type);
+  }
+  if (!selector.db) {
+    return matches;
+  }
+  const raw = selector.db;
+  const exactId = matches.filter(doc => doc._id === raw);
+  if (exactId.length > 0) {
+    return exactId;
+  }
+  const exactName = matches.filter(doc => doc.dbName === raw);
+  if (exactName.length > 0) {
+    return exactName;
+  }
+  const lowered = raw.toLowerCase();
+  return matches.filter(doc => doc.dbName.toLowerCase() === lowered);
+}
+
+export function resolveSetupDoc(
+  docs: DbSetupDoc[],
+  selector: {db: string; type?: DbSetupType}
+): DbSetupDoc {
+  const matches = matchSetupDocs(docs, selector);
+  if (matches.length === 0) {
+    throw new Error(
+      `No db-setup document matched '${selector.db}'` +
+        (selector.type ? ` (type ${selector.type})` : '') +
+        '.'
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Ambiguous db-setup match for '${selector.db}': ${matches
+        .map(doc => `${doc.dbType}:${doc.dbName}`)
+        .join(', ')}. Pass --type=.`
+    );
+  }
+  return matches[0]!;
+}
+
+export async function resetSetup(options: {
+  db: DebuggerDb;
+  docs: DbSetupDoc[];
+  selector: {db?: string; type?: DbSetupType; all: boolean};
+  part?: DbSetupPart;
+  nowMs: number;
+}): Promise<{
+  changed: number;
+  deleted: number;
+  cleared: number;
+}> {
+  const targets = options.selector.all
+    ? matchSetupDocs(options.docs, {type: options.selector.type})
+    : [
+        resolveSetupDoc(options.docs, {
+          db: options.selector.db!,
+          type: options.selector.type,
+        }),
+      ];
+  let deleted = 0;
+  let cleared = 0;
+  for (const doc of targets) {
+    if (!doc._rev) {
+      continue;
+    }
+    if (options.part === undefined) {
+      await options.db.remove({_id: doc._id, _rev: doc._rev});
+      deleted += 1;
+      continue;
+    }
+    const next: DbSetupDoc = {
+      ...doc,
+      [options.part]: undefined,
+    };
+    // Drop the cleared field rather than storing undefined.
+    if (options.part === 'design') {
+      delete next.design;
+    } else {
+      delete next.security;
+    }
+    await options.db.put(next);
+    cleared += 1;
+  }
+  return {changed: deleted + cleared, deleted, cleared};
+}
+
+export type SetupVerifyRow = {
+  setupType: string;
+  dbName: string;
+  part: DbSetupPart;
+  recordedVersion?: number;
+  recordedHash?: string;
+  targetVersion: number;
+  targetHash: string;
+  liveHash?: string;
+  drift: 'ok' | 'missing-live' | 'hash-mismatch' | 'record-stale';
+};
+
+export function compareSetupHashes(input: {
+  setupType: string;
+  dbName: string;
+  part: DbSetupPart;
+  recorded?: {version: number; hash: string};
+  targetVersion: number;
+  targetHash: string;
+  liveHash?: string;
+}): SetupVerifyRow {
+  let drift: SetupVerifyRow['drift'] = 'ok';
+  if (input.liveHash === undefined) {
+    drift = 'missing-live';
+  } else if (input.liveHash !== input.targetHash) {
+    drift = 'hash-mismatch';
+  } else if (
+    input.recorded !== undefined &&
+    input.recorded.hash !== input.targetHash
+  ) {
+    drift = 'record-stale';
+  }
+  return {
+    setupType: input.setupType,
+    dbName: input.dbName,
+    part: input.part,
+    recordedVersion: input.recorded?.version,
+    recordedHash: input.recorded?.hash,
+    targetVersion: input.targetVersion,
+    targetHash: input.targetHash,
+    liveHash: input.liveHash,
+    drift,
+  };
 }
 
 export function formatShowHuman(doc: MigrationsDBDocument): string {
@@ -1451,7 +2017,9 @@ async function loadSnapshot(
     timeoutMs: config.startupMigrationLockTimeoutMs,
     nowMs,
     lock: loaded.lock,
+    notebookMarker: loaded.notebookMarker,
     databases: loaded.databases,
+    setups: loaded.setups,
     unrecognised: loaded.unrecognised,
   });
 }
@@ -1499,6 +2067,81 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+async function hashLiveSecurity(db: {
+  security?: () => {
+    fetch: () => Promise<unknown>;
+    admins?: unknown;
+    members?: unknown;
+  };
+}): Promise<string | undefined> {
+  if (typeof db.security !== 'function') {
+    return undefined;
+  }
+  try {
+    const security = db.security();
+    await security.fetch();
+    const doc = {
+      admins: (security.admins ?? {names: [], roles: []}) as {
+        names: string[];
+        roles: string[];
+      },
+      members: (security.members ?? {names: [], roles: []}) as {
+        names: string[];
+        roles: string[];
+      },
+    };
+    return hashSecurityDocument(doc);
+  } catch {
+    return undefined;
+  }
+}
+
+export async function loadLiveSetupHashes(
+  doc: DbSetupDoc
+): Promise<{designHash?: string; securityHash?: string}> {
+  const projectId =
+    doc.dbType === 'DATA' && doc.dbName.startsWith('data-')
+      ? doc.dbName.slice('data-'.length)
+      : doc.dbName;
+  let db: {
+    get: (
+      id: string
+    ) => Promise<{_id: string; _rev?: string} & Record<string, unknown>>;
+    security?: () => {
+      fetch: () => Promise<unknown>;
+      admins?: unknown;
+      members?: unknown;
+    };
+  };
+  try {
+    db =
+      doc.dbType === 'MIGRATIONS'
+        ? (getMigrationDb() as unknown as typeof db)
+        : ((await getDbById({
+            dbType: doc.dbType as DATABASE_TYPE,
+            id: projectId,
+          })) as unknown as typeof db);
+  } catch {
+    return {};
+  }
+  const payload = contentForSetupType(
+    doc.dbType,
+    doc.dbType === 'DATA' ? {projectId} : {}
+  );
+  const liveDesigns = [];
+  for (const design of payload.designDocuments) {
+    try {
+      liveDesigns.push(await db.get(design._id));
+    } catch {
+      return {securityHash: await hashLiveSecurity(db)};
+    }
+  }
+  return {
+    designHash: await hashDesignDocuments(liveDesigns),
+    securityHash: await hashLiveSecurity(db),
+  };
+}
+
 export async function runCommand(
   command: DebuggerCommand,
   options: {
@@ -1508,6 +2151,9 @@ export async function runCommand(
     timeoutMs?: number;
     confirm?: (message: string, yes: boolean) => Promise<void>;
     loadNotebooks?: () => Promise<NotebookRow[]>;
+    loadLiveSetup?: (
+      doc: DbSetupDoc
+    ) => Promise<{designHash?: string; securityHash?: string}>;
   }
 ): Promise<{exitCode: number}> {
   if (command.name === 'help') {
@@ -1525,12 +2171,23 @@ export async function runCommand(
       printJson({
         notebookUiSchema: CURRENT_NOTEBOOK_UI_SCHEMA_VERSION,
         databases: migrationTargets(),
+        setups: DB_SETUP_TYPES.map(type => ({
+          type,
+          ...DB_SETUP_VERSIONS[type],
+        })),
       });
     } else {
       print(formatTargetsHuman());
       print(
         `\n  Notebook uiSpec target: ${CURRENT_NOTEBOOK_UI_SCHEMA_VERSION}`
       );
+      print('\n=== Design / security setup targets ===');
+      for (const type of DB_SETUP_TYPES) {
+        const versions = DB_SETUP_VERSIONS[type];
+        print(
+          `  ${type}: design v${versions.design}, security v${versions.security}`
+        );
+      }
     }
     return {exitCode: 0};
   }
@@ -1580,10 +2237,23 @@ export async function runCommand(
       db: command.db,
       type: command.type,
     });
+    const setupMatches = matchSetupDocs(loaded.setups, {
+      db: command.db,
+      type: command.type,
+    });
+    const setup = setupMatches[0];
     if (command.json) {
-      printJson({document: doc, view: toDbRow(doc)});
+      printJson({
+        document: doc,
+        view: toDbRow(doc),
+        setup: setup ? {document: setup, view: toSetupRow(setup)} : undefined,
+      });
     } else {
       print(formatShowHuman(doc));
+      if (setup) {
+        print('\n=== Database setup ===');
+        print(formatSetupTable([toSetupRow(setup)]));
+      }
     }
     return {exitCode: 0};
   }
@@ -1672,6 +2342,33 @@ export async function runCommand(
     return {exitCode: 0};
   }
 
+  if (command.name === 'reset-notebook-marker') {
+    const before = await readNotebookMarker(options.db);
+    const current = before
+      ? `currently ${String(before.schemaVersion)}`
+      : 'currently missing';
+    await confirm(
+      command.version === undefined
+        ? `Delete the notebook UI-schema marker (${current}). The next boot doer recreates it at its own target version.`
+        : `Set the notebook UI-schema marker to ${command.version} (${current}). Builds targeting a lower version will skip boot migrate after a foreign lock settlement.`,
+      command.yes
+    );
+    const result = await resetNotebookMarker({
+      db: options.db,
+      nowMs,
+      instanceId,
+      schemaVersion: command.version,
+    });
+    log(
+      !result.changed
+        ? `${DEBUG_MIGRATION_LOCK_LOG} no notebook marker to delete`
+        : result.after
+          ? `${DEBUG_MIGRATION_LOCK_LOG} notebook marker ${result.before ? String(result.before.schemaVersion) : 'missing'} → ${result.after.schemaVersion}`
+          : `${DEBUG_MIGRATION_LOCK_LOG} deleted notebook marker (was ${String(result.before?.schemaVersion ?? 'invalid')})`
+    );
+    return {exitCode: 0};
+  }
+
   if (command.name === 'claim') {
     await confirm(
       'Write a running lock held by this CLI. Other API instances will wait until timeout, unlock, or this claim is settled.',
@@ -1752,6 +2449,106 @@ export async function runCommand(
     return {exitCode: 0};
   }
 
+  if (command.name === 'reset-setup') {
+    const loaded = await loadMigrationsDb(options.db);
+    const target =
+      command.all === true
+        ? `every db-setup record${command.type ? ` of type ${command.type}` : ''}`
+        : `'${command.db}'`;
+    const partNote = command.part
+      ? ` (clear ${command.part} only)`
+      : ' (delete the document)';
+    await confirm(
+      `Reset setup for ${target}${partNote}. The next migrate will push this build's design/security.`,
+      command.yes
+    );
+    const result = await resetSetup({
+      db: options.db,
+      docs: loaded.setups,
+      selector: {
+        db: command.db,
+        type: command.type,
+        all: command.all,
+      },
+      part: command.part,
+      nowMs,
+    });
+    log(
+      `${DEBUG_MIGRATION_LOCK_LOG} reset-setup deleted=${result.deleted} cleared=${result.cleared}`
+    );
+    return {exitCode: 0};
+  }
+
+  if (command.name === 'verify-setup') {
+    const loaded = await loadMigrationsDb(options.db);
+    const docs = command.db
+      ? matchSetupDocs(loaded.setups, {db: command.db, type: command.type})
+      : matchSetupDocs(loaded.setups, {type: command.type});
+    if (command.db && docs.length === 0) {
+      throw new Error(
+        `No db-setup document matched '${command.db}'` +
+          (command.type ? ` (type ${command.type})` : '') +
+          '.'
+      );
+    }
+    const rows: SetupVerifyRow[] = [];
+    for (const doc of docs) {
+      const payload = contentForSetupType(
+        doc.dbType,
+        doc.dbType === 'DATA' && doc.dbName.startsWith('data-')
+          ? {projectId: doc.dbName.slice('data-'.length)}
+          : {}
+      );
+      const targetDesignHash = await hashDesignDocuments(
+        payload.designDocuments
+      );
+      const targetSecurityHash = await hashSecurityDocument(
+        payload.securityDocument
+      );
+      const live = options.loadLiveSetup
+        ? await options.loadLiveSetup(doc)
+        : await loadLiveSetupHashes(doc);
+      rows.push(
+        compareSetupHashes({
+          setupType: doc.dbType,
+          dbName: doc.dbName,
+          part: 'design',
+          recorded: doc.design,
+          targetVersion: DB_SETUP_VERSIONS[doc.dbType].design,
+          targetHash: targetDesignHash,
+          liveHash: live.designHash,
+        }),
+        compareSetupHashes({
+          setupType: doc.dbType,
+          dbName: doc.dbName,
+          part: 'security',
+          recorded: doc.security,
+          targetVersion: DB_SETUP_VERSIONS[doc.dbType].security,
+          targetHash: targetSecurityHash,
+          liveHash: live.securityHash,
+        })
+      );
+    }
+    if (command.json) {
+      printJson({rows});
+    } else {
+      print('=== Verify database setup ===');
+      if (rows.length === 0) {
+        print('  (no db-setup records)');
+      }
+      for (const row of rows) {
+        print(
+          `  ${row.setupType}:${row.dbName} ${row.part}  ${row.drift}` +
+            (row.liveHash
+              ? `  live=${row.liveHash.slice(0, 12)} target=${row.targetHash.slice(0, 12)}`
+              : '')
+        );
+      }
+    }
+    const drifted = rows.some(row => row.drift !== 'ok');
+    return {exitCode: drifted ? 1 : 0};
+  }
+
   return {exitCode: 0};
 }
 
@@ -1766,7 +2563,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     `${DEBUG_MIGRATION_LOCK_LOG} couch=${config.couchdbInternalUrl} lockEnabled=${config.startupMigrationLockEnabled}`
   );
   await requireCouch();
-  const db = getMigrationDb() as unknown as DebuggerDb;
+  const db = getMigrationDbStore();
   const result = await runCommand(command, {db});
   return result.exitCode;
 }

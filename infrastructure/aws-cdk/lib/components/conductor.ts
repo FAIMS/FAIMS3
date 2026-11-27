@@ -74,7 +74,13 @@ export interface ConductorRuntimeEnvInput {
   webAppPublicUrl: string;
   webUrl: string;
   appId: string;
+  /** Public HTTPS Couch URL (devices / `base_url`). */
   couchDBEndpoint: string;
+  /**
+   * In-VPC HTTP Couch URL for Nano/Pouch. Required and distinct from
+   * `couchDBEndpoint` — never fall back to the public hostname.
+   */
+  couchDBInternalUrl: string;
   couchDBPort: number;
   conductorExternalPort: number;
   conductorInternalPort: number;
@@ -131,7 +137,7 @@ export function buildConductorRuntimeEnv(
       ? 'false'
       : 'true';
   env.COUCHDB_PUBLIC_URL = input.couchDBEndpoint;
-  env.COUCHDB_INTERNAL_URL = input.couchDBEndpoint;
+  env.COUCHDB_INTERNAL_URL = input.couchDBInternalUrl;
   env.COUCHDB_EXTERNAL_PORT = String(input.couchDBPort);
   env.CONDUCTOR_EXTERNAL_PORT = String(input.conductorExternalPort);
   env.CONDUCTOR_INTERNAL_PORT = String(input.conductorInternalPort);
@@ -210,10 +216,16 @@ export interface FaimsConductorProps {
   certificate: acm.ICertificate;
   /** CouchDB admin user/password secret */
   couchDbAdminSecret: sm.Secret;
-  /** CouchDB port (external) */
+  /** CouchDB port (external / public ALB) */
   couchDBPort: number;
-  /** CouchDB endpoint (format: https://domain:port) */
+  /** Public CouchDB endpoint (format: https://domain:port) */
   couchDBEndpoint: string;
+  /**
+   * In-VPC CouchDB URL (format: http://couchdb.internal.<baseDomain>:5984).
+   * Spatial worker, capacity manager, and TTL cleanup inherit this via
+   * `environment` — do not overlay a second Couch URL on those tasks.
+   */
+  couchDBInternalUrl: string;
   /** Public URL for the /web (new conductor) */
   webUrl: string;
   /** Public URL for web app */
@@ -389,6 +401,7 @@ export class FaimsConductor extends Construct {
       webUrl: props.webUrl,
       appId: props.appId,
       couchDBEndpoint: props.couchDBEndpoint,
+      couchDBInternalUrl: props.couchDBInternalUrl,
       couchDBPort: props.couchDBPort,
       conductorExternalPort: this.externalPort,
       conductorInternalPort: this.internalPort,

@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
@@ -105,6 +106,7 @@ export class FaimsInfraStack extends cdk.Stack {
       instanceType: config.aws.couch.instanceType,
       certificate: primaryCert,
       domainName: domains.couch,
+      baseDomain: config.aws.domains.baseDomain,
       hz: hz,
       sharedBalancer: networking.sharedBalancer,
       dataVolumeSize: config.aws.couch.volumeSize,
@@ -152,6 +154,7 @@ export class FaimsInfraStack extends cdk.Stack {
       hz: hz,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
+      couchDBInternalUrl: couchDb.internalEndpoint,
       couchDBPort: couchDb.exposedPort,
       webAppPublicUrl: `https://${domains.faims}`,
       appId: config.core.android.appId,
@@ -167,6 +170,14 @@ export class FaimsInfraStack extends cdk.Stack {
       authProviders: config.aws.authProviders,
       localhostWhitelist: config.aws.conductor.localhostWhitelist,
     });
+
+    // Backend tasks share Conductor's security group; allow Couch :5984
+    // directly inside the VPC (ALB :5984 remains for the public hostname).
+    couchDb.securityGroup.connections.allowFrom(
+      conductor.serviceSecurityGroup,
+      ec2.Port.tcp(couchDb.internalPort),
+      'Allow traffic from Conductor tasks to CouchDB'
+    );
 
     // SPATIAL WORKERS
     // ===============

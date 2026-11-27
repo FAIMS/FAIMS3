@@ -2,7 +2,7 @@
 
 This guide is for operators upgrading an existing FAIMS3 deployment to the release that **inlines notebook definitions** on project/template Couch documents (projects DB **v4**, templates DB **v5**) and retires per-project **`metadata-{projectId}`** databases.
 
-For the target data model, see [Notebook definition](./NotebookDefinition.md). For schema-version mechanics, see [Notebook migrations](./NotebookMigrations.md) and [Couch migrations](./CouchMigrations.md).
+For the target data model, see [Notebook definition](./NotebookDefinition.md). For schema-version mechanics, see [Notebook migrations](./NotebookMigrations.md) and [Couch migrations](./CouchMigrations.md). For how migrations run on API startup and from the command line, see [How database migrations run](./DatabaseMigrationProcess.md).
 
 ## Which versions does this apply to?
 
@@ -64,25 +64,21 @@ The app behaviour is likely to be unstable or completely broken when the app is 
 
 1. **Deploy Conductor (API)** and **Control Centre (web)** together. The web designer and JSON upload paths expect the new API routes (`PUT …/uiSpecification`, partial `PUT …/:id` for name/description).
 2. **Release mobile app builds** that include this branch (or newer).
-3. Each API process binds `GET /up`, then calls `runStartupMigrations` before attaching the full API. `DISABLE_MIGRATE_ON_STARTUP` (default off) skips this entirely — no migrate, no lock — so the API attaches immediately; use only when migrate is handled out of band. When migrate-on-startup is still on and `STARTUP_MIGRATION_LOCK_ENABLED` is on (required for clustered / multi-replica production; AWS CDK hard-enables it unless JSON `disableStartupMigrationLock` is true), a Couch-mediated lock serialises the work so replicas do not race: the winner runs `initialiseAndMigrateDBs({force: true, pushKeys: true})` — the same path as `pnpm migrate-with-keys` — then `validateDatabases` (notebook JSON walks; see §5). Waiters proceed once the lock is `complete` or `failed`. A waiter that still sees `running` after `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` (default 30 minutes) steals the lock and runs migrate itself — it does not skip migrate and attach. The original doer is not cancelled; if it is still working, both migrate until it finishes, and it cannot write its result onto the stolen lock. The lock defaults **off** locally so a killed `pnpm run dev` reload does not leave a `running` document that strands the next boot until that steal. A lock or migrate failure is logged; the process still attaches the full API.
+3. Each API process migrates the databases on startup, before attaching the full API (Couch migrations, then the notebook design walk in §5). In a cluster, enable the startup lock so only one replica does the work. See [How database migrations run](./DatabaseMigrationProcess.md) for the settings, the lock and failure behaviour.
 4. **Do not delete `metadata-*` Couch databases** until Couch document migration has completed and you have validated samples (see §3).
 
 ---
 
 ## 2. Run Couch database migration
 
-Clustered API boot now applies Couch **projects** and **templates** migrations automatically. After `GET /up` is bound, `runStartupMigrations` (`api/src/couchdb/startupMigrations.ts`) runs `initialiseAndMigrateDBs({force: true, pushKeys: true})` — the same function as `pnpm migrate-with-keys` — then `validateDatabases`.
+API startup applies the Couch **projects** and **templates** migrations automatically. On a clustered deployment, enable the startup lock (`STARTUP_MIGRATION_LOCK_ENABLED=true`; AWS CDK enables it by default) so replicas do not all migrate at once. For how startup migration, the lock and the command-line alternative work, see [How database migrations run](./DatabaseMigrationProcess.md).
 
-**Enable the lock on any clustered / multi-replica deployment that still migrates on boot** (`STARTUP_MIGRATION_LOCK_ENABLED=true`). The winner claims a document lock in the migrations DB; other replicas wait until the lock is `complete` or `failed`. If it is still `running` after `STARTUP_MIGRATION_LOCK_TIMEOUT_MS` (default 30 minutes), a waiter steals it and runs migrate again — timeout is not “give up and attach”. Age is `now - startedAtMs` (no heartbeat), so a slow-but-alive doer is stealable the same as a crashed one; the original `run()` is not cancelled. A later startup wave re-claims a settled lock and runs again; the migrate path is idempotent. AWS CDK hard-enables this unless JSON `disableStartupMigrationLock` is true, and rejects `disableMigrateOnStartup: true` together with an explicit `disableStartupMigrationLock: false`. The API default is **off** so local live-reload does not wait on a lock left by a killed process. Set `DISABLE_MIGRATE_ON_STARTUP=true` to skip boot migrate entirely (lock unused).
-
-`pnpm run migrate` / `migrate-with-keys` is that same `initialiseAndMigrateDBs` call, useful when you want a **controlled** run (API stopped, or before replicas listen), to push JWT keys without waiting for boot, or to re-run after a failure. The CLI does **not** take the startup lock — do not run it against a live cluster that is also booting. Stop or scale down the API first, or rely on boot alone.
-
-From the repository root (with env pointing at the deployment CouchDB):
+To run it by hand instead (for a controlled run with the API scaled down), from the repository root with env pointing at the deployment CouchDB:
 
 ```bash
 cd api
 # Ensure your .env file is accurately targetting your DB
-pnpm run migrate          # structure + migrations; no JWT key push
+pnpm run migrate          # structure + migrations + notebook walk; no JWT key push
 # or, when keys must be (re)written (same flags as API boot):
 pnpm run migrate-with-keys
 ```

@@ -99,6 +99,7 @@ describe('Migration System Tests', () => {
             DB_TARGET_VERSIONS[dbType].defaultVersion
           );
           expect(migrationDoc.status).toBe('healthy');
+          expect(migrationDoc.kind).toBe('db-version');
 
           // Check log entry
           expect(migrationDoc.migrationLog.length).toBe(1);
@@ -141,6 +142,7 @@ describe('Migration System Tests', () => {
         DB_TARGET_VERSIONS[DatabaseType.DATA].targetVersion
       );
       expect(doc.status).toBe('healthy');
+      expect(doc.kind).toBe('db-version');
       expect(doc.migrationLog[0].from).toBe(0);
       expect(doc.migrationLog[0].to).toBe(doc.version);
       expect(doc.migrationLog[0].launchedBy).toBe('alice');
