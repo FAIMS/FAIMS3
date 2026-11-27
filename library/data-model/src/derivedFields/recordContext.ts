@@ -27,6 +27,7 @@ export interface DerivedReadEngine {
   uiSpec: CompiledNotebookUiSpec;
   core: {
     getRecord(id: string): Promise<{type: string; heads?: string[]}>;
+    getRevision(id: string): Promise<{deleted?: boolean}>;
   };
   hydrated: {
     getHydratedRecord(args: {recordId: string}): Promise<{
@@ -43,7 +44,11 @@ export interface DerivedReadEngine {
     getExistingFormData(args: {
       recordId: string;
       derivedDepth?: number;
-    }): Promise<{formId: string; data: Record<string, unknown>}>;
+    }): Promise<{
+      formId: string;
+      data: Record<string, unknown>;
+      context?: {revision: {deleted?: boolean}};
+    }>;
   };
 }
 

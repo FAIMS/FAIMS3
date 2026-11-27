@@ -148,3 +148,15 @@ export const readValue = async (
   fieldId: string
 ): Promise<unknown> =>
   (await engine.form.getExistingFormData({recordId})).data[fieldId]?.data;
+
+/** Soft-deletes a record. */
+export const deleteSamplerRecord = async (
+  engine: DataEngine,
+  recordId: string
+): Promise<void> => {
+  await engine.deleteRecord({
+    recordId,
+    baseRevisionId: await engine.form.getCurrentRevisionId({recordId}),
+    userId: SAMPLER_USER,
+  });
+};

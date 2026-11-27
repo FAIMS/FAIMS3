@@ -73,6 +73,7 @@ type StubRecord = {
   formId: string;
   data: Record<string, {data: unknown}>;
   heads?: string[];
+  context?: {revision: {deleted?: boolean}};
 };
 
 function makeEngine({
@@ -80,11 +81,13 @@ function makeEngine({
   records,
   revisionValues,
   failHydration,
+  deletedRevisions,
 }: {
   parents: {recordId: string}[] | undefined;
   records?: Record<string, StubRecord>;
   revisionValues?: Record<string, Record<string, unknown>>;
   failHydration?: boolean;
+  deletedRevisions?: string[];
 }): DataEngine {
   return {
     uiSpec: makeUiSpec(),
@@ -94,6 +97,9 @@ function makeEngine({
         if (!rec) throw new Error(`no record ${recordId}`);
         return {type: rec.formId, heads: rec.heads ?? [`frev-${recordId}`]};
       },
+      getRevision: async (revisionId: string) => ({
+        deleted: deletedRevisions?.includes(revisionId) ?? false,
+      }),
     },
     hydrated: {
       getHydratedRecord: async () => {
@@ -236,5 +242,49 @@ describe('resolveParentValues', () => {
     });
     // Full unwrapped data, via getExistingFormData.
     expect(values).toEqual({'Site-Name': 'Alpha', 'Site-Features': 'link'});
+  });
+});
+
+describe('resolveParentValues with a deleted parent', () => {
+  const site: StubRecord = {
+    formId: 'SITE',
+    data: {'Site-Name': {data: 'Alpha'}},
+  };
+
+  it('returns no values from the per-field fetch', async () => {
+    const engine = makeEngine({
+      parents: [{recordId: 'rec-site'}],
+      records: {'rec-site': site},
+      revisionValues: {'frev-rec-site': {'Site-Name': 'Alpha'}},
+      deletedRevisions: ['frev-rec-site'],
+    });
+    expect(
+      await resolveParentValues({
+        engine,
+        recordId: 'rec-child',
+        formId: 'FEATURE',
+      })
+    ).toEqual({});
+  });
+
+  it('returns no values from the full read', async () => {
+    // Two heads send the lookup down the full read
+    const engine = makeEngine({
+      parents: [{recordId: 'rec-site'}],
+      records: {
+        'rec-site': {
+          ...site,
+          heads: ['frev-a', 'frev-b'],
+          context: {revision: {deleted: true}},
+        },
+      },
+    });
+    expect(
+      await resolveParentValues({
+        engine,
+        recordId: 'rec-child',
+        formId: 'FEATURE',
+      })
+    ).toEqual({});
   });
 });

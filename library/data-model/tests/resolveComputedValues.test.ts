@@ -98,7 +98,11 @@ const makeLinkSpec = () => {
 
 const makeEngine = (
   spec: any = makeSpec(),
-  fullRead: {formId: string; data: Record<string, {data: unknown}>} = {
+  fullRead: {
+    formId: string;
+    data: Record<string, {data: unknown}>;
+    context?: {revision: {deleted?: boolean}};
+  } = {
     formId: 'Site',
     data: {'Site-Area': {data: 10}},
   }
@@ -106,6 +110,7 @@ const makeEngine = (
   uiSpec: spec,
   core: {
     getRecord: jest.fn(async () => ({type: 'Site', heads: ['site-rev']})),
+    getRevision: jest.fn(async (): Promise<{deleted?: boolean}> => ({})),
   },
   hydrated: {
     getHydratedRecord: jest.fn(),
@@ -259,5 +264,33 @@ describe('applyComputedValues', () => {
     expect(
       await applyComputedValues({engine: asEngine(makeEngine()), record: site})
     ).toBe(site);
+  });
+});
+
+describe('resolveComputedValues with a deleted record', () => {
+  it('blanks the value when the parent is deleted', async () => {
+    const engine = makeEngine();
+    engine.core.getRevision.mockResolvedValue({deleted: true});
+    expect(await resolve(engine)).toEqual({'Feature-Density': null});
+  });
+
+  it('blanks the value when the linked record is deleted', async () => {
+    const engine = makeEngine(makeLinkSpec(), {
+      formId: 'Calibration',
+      data: {'Cutter-Mass-g': {data: 40}},
+      context: {revision: {deleted: true}},
+    });
+    expect(
+      await resolve(engine, {
+        formId: 'Test',
+        recordId: 'test-1',
+        parents: [],
+        values: {
+          'Wet-Mass-g': 100,
+          'Core-Calibration': {record_id: 'cal-1'},
+          'Soil-Mass-g': 60,
+        },
+      })
+    ).toEqual({'Soil-Mass-g': null});
   });
 });

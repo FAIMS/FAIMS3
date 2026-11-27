@@ -17,6 +17,7 @@ import {
   createFeature,
   createSamplerEngine,
   createSamplerRecord,
+  deleteSamplerRecord,
   readValue,
   SAMPLE_PAIR,
   SAMPLER_PROJECT,
@@ -135,6 +136,31 @@ describe('Computed Sampler', () => {
       });
       expect(await readValue(engine, a, 'Sample-Level')).toBeFalsy();
       expect(await readValue(engine, b, 'Sample-Level')).toBeFalsy();
+    });
+  });
+
+  describe('deleted records', () => {
+    test('a deleted parent blanks the value, even when one is stored', async () => {
+      const {siteId, featureId} = await createSiteWithFeature();
+      await setSamplerValues(engine, featureId, {'Feature-Density': 3});
+      await deleteSamplerRecord(engine, siteId);
+      expect(await readValue(engine, featureId, 'Feature-Density')).toBeNull();
+    });
+
+    test('a deleted linked record blanks the value, even when one is stored', async () => {
+      const calibrationId = await createSamplerRecord(engine, 'Calibration', {
+        'Cutter-ID': 'C1',
+        'Cutter-Mass-g': 50,
+        'Tare-g': 10,
+      });
+      const testId = await createSamplerRecord(engine, 'Test', {
+        'Test-Name': 'T1',
+        'Wet-Mass-g': 100,
+        'Core-Calibration': singleLinkTo(calibrationId, CALIBRATION_PAIR),
+        'Soil-Mass-g': 60,
+      });
+      await deleteSamplerRecord(engine, calibrationId);
+      expect(await readValue(engine, testId, 'Soil-Mass-g')).toBeNull();
     });
   });
 

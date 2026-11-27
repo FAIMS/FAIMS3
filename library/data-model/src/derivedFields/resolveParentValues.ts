@@ -32,7 +32,8 @@ const unwrapFormData = (data: Record<string, unknown>): ValuesObject => {
  * matching the resolution rule of the ParentFieldDisplay field. Values are
  * raw; formatting and typing happen at the point of use. Returns null when
  * there is no parent; resolution failures also return null so callers treat
- * them as no-parent.
+ * them as no-parent. A deleted parent returns an empty object: it was read
+ * and holds no values, so references to it are blank.
  */
 export const resolveParentValues = async ({
   engine,
@@ -92,7 +93,13 @@ export const resolveParentValues = async ({
             recordId: rel.recordId,
             derivedDepth,
           });
-          return unwrapFormData(parent.data);
+          return parent.context?.revision.deleted === true
+            ? {}
+            : unwrapFormData(parent.data);
+        }
+        // The per-field fetch does not report deletion, so read the head.
+        if ((await engine.core.getRevision(heads[0])).deleted === true) {
+          return {};
         }
         return await engine.hydrated.getFieldValues({
           revisionId: heads[0],
@@ -106,7 +113,9 @@ export const resolveParentValues = async ({
       if (!parentForms.has(parent.formId)) {
         continue;
       }
-      return unwrapFormData(parent.data);
+      return parent.context?.revision.deleted === true
+        ? {}
+        : unwrapFormData(parent.data);
     }
     return null;
   } catch (e) {

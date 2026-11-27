@@ -42,6 +42,8 @@ export const linkedRecordId = (raw: unknown): string | null =>
  * revision, so callers can re-resolve when a link changes during editing.
  * A field with no link, an unresolvable link, or a link to a record of the
  * wrong form contributes no entry; callers treat a missing entry as no value.
+ * A link to a deleted record contributes an empty entry: it was read and
+ * holds no values, so references to it are blank.
  */
 export const resolveRelatedValues = async ({
   engine,
@@ -71,6 +73,10 @@ export const resolveRelatedValues = async ({
         derivedDepth,
       });
       if (record.formId !== info.relatedFormId) continue;
+      if (record.context?.revision.deleted === true) {
+        resolved[relFieldId] = {};
+        continue;
+      }
       // Unwrap {data: ...} entries to raw values.
       const relValues: ValuesObject = {};
       for (const [k, v] of Object.entries(record.data)) {
