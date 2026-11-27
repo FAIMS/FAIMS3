@@ -98,7 +98,7 @@ export function computedFieldOrder({
     string,
     | {
         'component-name'?: string;
-        'component-parameters'?: {expression?: unknown};
+        'component-parameters'?: object;
       }
     | undefined
   >;
@@ -113,7 +113,10 @@ export function computedFieldOrder({
     ) {
       continue;
     }
-    const expression = field['component-parameters']?.expression;
+    const parameters = field['component-parameters'] as
+      | {expression?: unknown}
+      | undefined;
+    const expression = parameters?.expression;
     expressions.set(fieldId, typeof expression === 'string' ? expression : '');
   }
 

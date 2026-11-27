@@ -28,6 +28,8 @@ vi.mock('../mdx-editor', () => ({
 const COMPUTED_ID = 'f_computed';
 const WIDTH_ID = 'f_width';
 const OTHER_COMPUTED_ID = 'f_other_computed';
+const TOTAL_ID = 'f_total';
+const TEMPLATED_ID = 'f_templated';
 const DESIGNER_ID = 'designer-id-1';
 
 const WithProviders = ({
@@ -46,7 +48,7 @@ const WithProviders = ({
   </ThemeProvider>
 );
 
-function storeWithComputed(expression = '') {
+function storeWithComputed(expression = '', totalExpression = '') {
   const store = createDesignerStore();
   const computed = getFieldSpec('ComputedNumber');
   computed['component-parameters'].name = COMPUTED_ID;
@@ -67,17 +69,38 @@ function storeWithComputed(expression = '') {
   otherComputed.exportName = 'Derived-Label';
   otherComputed.designerIdentifier = 'designer-id-3';
 
+  const total = getFieldSpec('ComputedNumber');
+  total['component-parameters'].name = TOTAL_ID;
+  total['component-parameters'].label = 'Total';
+  total['component-parameters'].expression = totalExpression;
+  total.exportName = 'Total';
+  total.designerIdentifier = 'designer-id-4';
+
+  const templated = getFieldSpec('TemplatedStringField');
+  templated['component-parameters'].name = TEMPLATED_ID;
+  templated['component-parameters'].label = 'Summary';
+  templated.exportName = 'Summary';
+  templated.designerIdentifier = 'designer-id-5';
+
   store.dispatch(
     loaded({
       fields: {
         [COMPUTED_ID]: computed,
         [WIDTH_ID]: width,
         [OTHER_COMPUTED_ID]: otherComputed,
+        [TOTAL_ID]: total,
+        [TEMPLATED_ID]: templated,
       },
       views: {
         sectionA: {
           label: 'Section A',
-          fields: [COMPUTED_ID, WIDTH_ID, OTHER_COMPUTED_ID],
+          fields: [
+            COMPUTED_ID,
+            WIDTH_ID,
+            OTHER_COMPUTED_ID,
+            TOTAL_ID,
+            TEMPLATED_ID,
+          ],
         },
       },
       viewsets: {
@@ -133,13 +156,30 @@ describe('ComputedFieldEditor', () => {
     );
   });
 
-  it('omits derived fields from the insert picker', () => {
+  it('offers computed fields in the insert picker, but not templated strings or itself', () => {
     renderEditor(storeWithComputed());
 
     const picker = screen.getByTestId('computed-field-insert');
     fireEvent.mouseDown(within(picker).getByRole('combobox'));
     expect(screen.getByRole('option', {name: /Width/})).toBeTruthy();
-    expect(screen.queryByRole('option', {name: /Derived Label/})).toBeNull();
+    expect(screen.getByRole('option', {name: /Derived Label/})).toBeTruthy();
+    expect(screen.getByRole('option', {name: /Total/})).toBeTruthy();
+    expect(screen.queryByRole('option', {name: /Summary/})).toBeNull();
+    expect(screen.queryByRole('option', {name: /Area/})).toBeNull();
+  });
+
+  it('accepts a reference to another computed field', () => {
+    renderEditor(storeWithComputed(`{${TOTAL_ID}} + 1`, `{${WIDTH_ID}} * 2`));
+    expect(screen.queryByTestId('expression-error')).toBeNull();
+  });
+
+  it('reports a circular reference, naming the chain', () => {
+    renderEditor(
+      storeWithComputed(`{${TOTAL_ID}} + 1`, `{${COMPUTED_ID}} * 2`)
+    );
+    expect(screen.getByTestId('expression-error').textContent).toContain(
+      'Circular reference: Area -> Total -> Area'
+    );
   });
 
   it('persists a typed expression after debounce', () => {
