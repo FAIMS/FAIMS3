@@ -11,7 +11,7 @@
 import {getParentFormsForForm, ValuesObject} from '../uiSpecification';
 import {isComputedFieldName} from './computedFields';
 import {referencedParentFields} from './parentFieldScan';
-import {DerivedReadEngine} from './recordContext';
+import {DerivedReadCache, DerivedReadEngine} from './recordContext';
 import {logWarn} from '../logging';
 
 /** Unwraps {data: ...} form entries to raw values. */
@@ -41,6 +41,7 @@ export const resolveParentValues = async ({
   formId,
   parents: knownParents,
   derivedDepth,
+  derivedCache,
 }: {
   engine: DerivedReadEngine;
   recordId: string;
@@ -49,6 +50,8 @@ export const resolveParentValues = async ({
   parents?: ReadonlyArray<{recordId: string}>;
   /** Passed to full parent reads; see getExistingFormData. */
   derivedDepth?: number;
+  /** Passed to full parent reads; see getExistingFormData. */
+  derivedCache?: DerivedReadCache;
 }): Promise<ValuesObject | null> => {
   try {
     const parents =
@@ -78,7 +81,14 @@ export const resolveParentValues = async ({
       )
     );
     for (const rel of parents) {
-      if (wanted !== null && wanted.length > 0 && !wantsComputed) {
+      // In a list or export run the full read below is shared by every child
+      // of this parent, which beats a per-field fetch for each child.
+      if (
+        wanted !== null &&
+        wanted.length > 0 &&
+        !wantsComputed &&
+        !derivedCache
+      ) {
         // Cheap path: check the parent's form from its record document, then
         // fetch only the referenced fields from its head revision.
         const parentRecord = await engine.core.getRecord(rel.recordId);
@@ -109,6 +119,7 @@ export const resolveParentValues = async ({
       const parent = await engine.form.getExistingFormData({
         recordId: rel.recordId,
         derivedDepth,
+        derivedCache,
       });
       if (!parentForms.has(parent.formId)) {
         continue;

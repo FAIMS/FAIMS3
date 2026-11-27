@@ -178,6 +178,49 @@ describe('Computed Sampler', () => {
   });
 
   describe('list and export reads', () => {
+    test('a list resolves a shared parent once, and a later list sees an edit', async () => {
+      const siteId = await createSamplerRecord(engine, 'Site', {
+        'Site-Name': 'Shared',
+        'Site-Area': 10,
+        'Site-Scale': 2,
+      });
+      const counts = [10, 20, 30];
+      const featureIds: string[] = [];
+      for (const count of counts) {
+        const {recordId} = await createFeature(engine, siteId, {
+          'Feature-Name': `F${count}`,
+          'Feature-Count': count,
+          'Feature-Depth': 1,
+        });
+        featureIds.push(recordId);
+      }
+      const scaledDensities = async () => {
+        const page = await engine.form.listHydratedRecords({
+          projectId: SAMPLER_PROJECT,
+          formId: 'Feature',
+        });
+        return featureIds.map(
+          id =>
+            page.records.find(row => row.recordId === id)?.data[
+              'Feature-Scaled-Density'
+            ]?.data
+        );
+      };
+
+      const reads = jest.spyOn(engine.hydrated, 'getHydratedRecord');
+      const first = await scaledDensities();
+      const siteReads = reads.mock.calls.filter(
+        ([args]) => args.recordId === siteId
+      ).length;
+      reads.mockRestore();
+      // Scaled area is 10 * 2
+      expect(first).toEqual([0.5, 1, 1.5]);
+      expect(siteReads).toBe(1);
+
+      // The cache lasts one list call
+      await setSamplerValues(engine, siteId, {'Site-Scale': 4});
+      expect(await scaledDensities()).toEqual([0.25, 0.5, 0.75]);
+    });
     test('the list read resolves each row', async () => {
       const {featureId} = await createSiteWithFeature();
       const {records} = await engine.form.listHydratedRecords({

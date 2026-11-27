@@ -325,3 +325,41 @@ describe('same-form chain behind an unreadable parent', () => {
     expect(updates).toEqual({});
   });
 });
+
+describe('applyComputedValues in an export run', () => {
+  it('reads the parent through the run cache', async () => {
+    const getExistingFormData = jest.fn(async () => ({
+      formId: 'Site',
+      data: {'Site-Area': {data: 10}},
+    }));
+    const getFieldValues = jest.fn();
+    const engine = {
+      uiSpec: makeSpec(),
+      core: {getRecord: jest.fn(), getRevision: jest.fn()},
+      hydrated: {
+        getHydratedRecord: jest.fn(async () => ({
+          revision: {relationship: {parent: [{recordId: 'site-1'}]}},
+        })),
+        getFieldValues,
+      },
+      form: {getExistingFormData},
+    } as unknown as DerivedReadEngine;
+    const derivedCache = new Map<string, unknown>();
+
+    const record = await applyComputedValues({
+      engine,
+      record: {
+        record_id: 'feature-1',
+        type: 'Feature',
+        data: {'Feature-Count': 30},
+      },
+      derivedCache,
+    });
+
+    expect(record.data['Feature-Density']).toBe(3);
+    expect(getExistingFormData).toHaveBeenCalledWith(
+      expect.objectContaining({recordId: 'site-1', derivedCache})
+    );
+    expect(getFieldValues).not.toHaveBeenCalled();
+  });
+});

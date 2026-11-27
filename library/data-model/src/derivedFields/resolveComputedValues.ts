@@ -18,7 +18,7 @@ import {
   ValuesObject,
 } from '../uiSpecification';
 import {isComputedFieldName, recomputeComputedFields} from './computedFields';
-import {DerivedReadEngine} from './recordContext';
+import {DerivedReadCache, DerivedReadEngine} from './recordContext';
 import {resolveParentValues} from './resolveParentValues';
 import {linkedRecordId, resolveRelatedValues} from './resolveRelatedValues';
 
@@ -33,6 +33,7 @@ import {linkedRecordId, resolveRelatedValues} from './resolveRelatedValues';
  * @param parents The record's parent links, when the caller already holds them
  * @param metadataValues Notebook metadata; omitted leaves _METADATA fields stored
  * @param derivedDepth Hops already resolved to reach this record
+ * @param derivedCache Records already resolved in this list or export run
  * @returns Computed values that differ from the stored ones, keyed by field
  */
 export const resolveComputedValues = async ({
@@ -43,6 +44,7 @@ export const resolveComputedValues = async ({
   parents,
   metadataValues,
   derivedDepth = 0,
+  derivedCache,
 }: {
   engine: DerivedReadEngine;
   recordId: string;
@@ -51,6 +53,7 @@ export const resolveComputedValues = async ({
   parents?: ReadonlyArray<{recordId: string}>;
   metadataValues?: Record<string, string>;
   derivedDepth?: number;
+  derivedCache?: DerivedReadCache;
 }): Promise<Record<string, ExprValue | null>> => {
   const uiSpecification = engine.uiSpec;
 
@@ -75,6 +78,7 @@ export const resolveComputedValues = async ({
           formId,
           parents,
           derivedDepth: derivedDepth + 1,
+          derivedCache,
         })
       : null,
     allRefs.some(isRelatedRef)
@@ -83,6 +87,7 @@ export const resolveComputedValues = async ({
           values,
           formId,
           derivedDepth: derivedDepth + 1,
+          derivedCache,
         })
       : {},
   ]);
@@ -137,10 +142,12 @@ export const applyComputedValues = async <
   engine,
   record,
   metadataValues,
+  derivedCache,
 }: {
   engine: DerivedReadEngine;
   record: R;
   metadataValues?: Record<string, string>;
+  derivedCache?: DerivedReadCache;
 }): Promise<R> => {
   if (!record.data) {
     return record;
@@ -151,6 +158,7 @@ export const applyComputedValues = async <
     formId: record.type,
     values: record.data,
     metadataValues,
+    derivedCache,
   });
   return Object.keys(updates).length === 0
     ? record

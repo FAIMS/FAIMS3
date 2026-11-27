@@ -10,7 +10,7 @@
 
 import {getRelatedRecordFields, ValuesObject} from '../uiSpecification';
 import {logWarn} from '../logging';
-import {DerivedReadEngine} from './recordContext';
+import {DerivedReadCache, DerivedReadEngine} from './recordContext';
 
 /** A single stored link, as written by the Related Records field. */
 type LinkEntry = {record_id?: string};
@@ -50,12 +50,15 @@ export const resolveRelatedValues = async ({
   values,
   formId,
   derivedDepth,
+  derivedCache,
 }: {
   engine: DerivedReadEngine;
   values: ValuesObject;
   formId: string;
   /** Passed to linked-record reads; see getExistingFormData. */
   derivedDepth?: number;
+  /** Passed to linked-record reads; see getExistingFormData. */
+  derivedCache?: DerivedReadCache;
 }): Promise<Record<string, ValuesObject>> => {
   const resolved: Record<string, ValuesObject> = {};
   const relatedFields = getRelatedRecordFields({
@@ -71,6 +74,7 @@ export const resolveRelatedValues = async ({
       const record = await engine.form.getExistingFormData({
         recordId: link.record_id,
         derivedDepth,
+        derivedCache,
       });
       if (record.formId !== info.relatedFormId) continue;
       if (record.context?.revision.deleted === true) {

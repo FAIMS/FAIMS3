@@ -55,7 +55,10 @@ import {
   UpdatedTimeIndexError,
   UpdatedTimeFilter,
 } from './updatedTimeFilter';
-import type {DerivedReadEngine} from '../derivedFields/recordContext';
+import type {
+  DerivedReadCache,
+  DerivedReadEngine,
+} from '../derivedFields/recordContext';
 import {applyComputedValues} from '../derivedFields/resolveComputedValues';
 
 export function generateFAIMSDataID(): RecordID {
@@ -953,6 +956,9 @@ export const notebookRecordIterator = async ({
   engine?: DerivedReadEngine;
 }) => {
   const batchSize = 20;
+  // One cache for the whole export: a parent or linked record shared by many
+  // rows is resolved once.
+  const derivedCache: DerivedReadCache = new Map();
   const updatedFilter: UpdatedTimeFilter = {updatedAfter, updatedBefore};
   const timeFilterActive = hasUpdatedTimeFilter(updatedFilter);
   const getNextBatch = async (bookmark: string | null) => {
@@ -1023,7 +1029,7 @@ export const notebookRecordIterator = async ({
           record = null;
           return {
             record: engine
-              ? await applyComputedValues({engine, record: data})
+              ? await applyComputedValues({engine, record: data, derivedCache})
               : data,
             done: false,
           };
