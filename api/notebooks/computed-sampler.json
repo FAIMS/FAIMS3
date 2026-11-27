@@ -1,0 +1,859 @@
+{
+  "name": "Computed Sampler",
+  "description": "Reference notebook for computed fields: same-form chains, parent and linked references, and a self-reference through a link.",
+  "uiSpecification": {
+    "uiSpec": {
+      "fields": {
+        "Site-HRID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "Site-HRID",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Site-Name}}",
+            "hidden": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Site Name",
+            "name": "Site-Name",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Site-Area": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Site Area",
+            "name": "Site-Area",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Site-Scale": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Site Scale",
+            "name": "Site-Scale",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Site-Scaled-Area": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Scaled Area",
+            "fullWidth": true,
+            "name": "Site-Scaled-Area",
+            "helperText": "Same-form inputs. Referenced by child Features.",
+            "required": false,
+            "expression": "{Site-Area} * {Site-Scale}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Site-Features": {
+          "component-namespace": "faims-custom",
+          "component-name": "RelatedRecordSelector",
+          "type-returned": "faims-core::Relationship",
+          "component-parameters": {
+            "label": "Features",
+            "fullWidth": true,
+            "helperText": "",
+            "required": false,
+            "related_type": "Feature",
+            "relation_type": "faims-core::Child",
+            "multiple": true,
+            "related_type_label": "Feature",
+            "name": "Site-Features",
+            "relation_linked_vocabPair": []
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Feature-HRID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "Feature-HRID",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Feature-Name}}",
+            "hidden": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Feature Name",
+            "name": "Feature-Name",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Feature-Count": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Feature Count",
+            "name": "Feature-Count",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Feature-Depth": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Feature Depth",
+            "name": "Feature-Depth",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Feature-Density": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Density",
+            "fullWidth": true,
+            "name": "Feature-Density",
+            "helperText": "Parent reference.",
+            "required": false,
+            "expression": "{Feature-Count} / {_PARENT.Site-Area}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Scaled-Density": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Scaled Density",
+            "fullWidth": true,
+            "name": "Feature-Scaled-Density",
+            "helperText": "Reference to the parent's computed field.",
+            "required": false,
+            "expression": "{Feature-Count} / {_PARENT.Site-Scaled-Area}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Volume": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Volume",
+            "fullWidth": true,
+            "name": "Feature-Volume",
+            "helperText": "Same-form chain, step one: reads Density.",
+            "required": false,
+            "expression": "{Feature-Density} * {Feature-Depth}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Volume-Class": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedText",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Volume Class",
+            "fullWidth": true,
+            "name": "Feature-Volume-Class",
+            "helperText": "Same-form chain, step two: reads Volume.",
+            "required": false,
+            "expression": "{Feature-Volume} > 10 ? 'High' : 'Low'"
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Combined": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Combined Density",
+            "fullWidth": true,
+            "name": "Feature-Combined",
+            "helperText": "Diamond: two computed inputs sharing Feature Count.",
+            "required": false,
+            "expression": "{Feature-Density} + {Feature-Scaled-Density}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Feature-Label": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Feature Label",
+            "fullWidth": true,
+            "name": "Feature-Label",
+            "helperText": "",
+            "required": false,
+            "template": "{{_PARENT.Site-Name}} / {{Feature-Volume-Class}}"
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Calibration-HRID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "Calibration-HRID",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Cutter-ID}}",
+            "hidden": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Cutter-ID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Cutter ID",
+            "name": "Cutter-ID",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Cutter-Mass-g": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Cutter Mass (g)",
+            "name": "Cutter-Mass-g",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Tare-g": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Tare (g)",
+            "name": "Tare-g",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Net-Cutter-g": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Net Cutter Mass (g)",
+            "fullWidth": true,
+            "name": "Net-Cutter-g",
+            "helperText": "Same-form inputs. Referenced by linked Tests.",
+            "required": false,
+            "expression": "{Cutter-Mass-g} - {Tare-g}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Test-HRID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "Test-HRID",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Test-Name}}",
+            "hidden": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Test-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Test Name",
+            "name": "Test-Name",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Wet-Mass-g": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Wet Mass (g)",
+            "name": "Wet-Mass-g",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Core-Calibration": {
+          "component-namespace": "faims-custom",
+          "component-name": "RelatedRecordSelector",
+          "type-returned": "faims-core::Relationship",
+          "component-parameters": {
+            "label": "Calibration",
+            "fullWidth": true,
+            "helperText": "",
+            "required": false,
+            "related_type": "Calibration",
+            "relation_type": "faims-core::Linked",
+            "multiple": false,
+            "related_type_label": "Calibration",
+            "name": "Core-Calibration",
+            "relation_linked_vocabPair": [["is calibrated by", "calibrates"]]
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Soil-Mass-g": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Soil Mass (g)",
+            "fullWidth": true,
+            "name": "Soil-Mass-g",
+            "helperText": "Reference to the linked record's computed field.",
+            "required": false,
+            "expression": "{Wet-Mass-g} - {Core-Calibration.Net-Cutter-g}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Sample-HRID": {
+          "component-namespace": "faims-custom",
+          "component-name": "TemplatedStringField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "ID",
+            "fullWidth": true,
+            "name": "Sample-HRID",
+            "helperText": "Human Readable ID",
+            "required": true,
+            "template": "{{Sample-Name}}",
+            "hidden": true
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        },
+        "Sample-Name": {
+          "component-namespace": "faims-custom",
+          "component-name": "TextField",
+          "type-returned": "faims-core::String",
+          "component-parameters": {
+            "label": "Sample Name",
+            "name": "Sample-Name",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Sample-Increment": {
+          "component-namespace": "faims-custom",
+          "component-name": "NumberField",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Increment",
+            "name": "Sample-Increment",
+            "helperText": "",
+            "required": false
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Previous-Sample": {
+          "component-namespace": "faims-custom",
+          "component-name": "RelatedRecordSelector",
+          "type-returned": "faims-core::Relationship",
+          "component-parameters": {
+            "label": "Previous Sample",
+            "fullWidth": true,
+            "helperText": "",
+            "required": false,
+            "related_type": "Sample",
+            "relation_type": "faims-core::Linked",
+            "multiple": false,
+            "related_type_label": "Sample",
+            "name": "Previous-Sample",
+            "relation_linked_vocabPair": [["follows", "is followed by"]]
+          },
+          "initialValue": "",
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          },
+          "persistent": false
+        },
+        "Sample-Level": {
+          "component-namespace": "faims-custom",
+          "component-name": "ComputedNumber",
+          "type-returned": "faims-core::Number",
+          "component-parameters": {
+            "label": "Level",
+            "fullWidth": true,
+            "name": "Sample-Level",
+            "helperText": "Self-reference through a link. Has no starting value, so it stays blank.",
+            "required": false,
+            "expression": "{Previous-Sample.Sample-Level} + {Sample-Increment}"
+          },
+          "initialValue": null,
+          "meta": {
+            "annotation": {
+              "include": false,
+              "label": "annotation"
+            },
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
+        }
+      },
+      "views": {
+        "Site-Main": {
+          "label": "Main",
+          "fields": [
+            "Site-HRID",
+            "Site-Name",
+            "Site-Area",
+            "Site-Scale",
+            "Site-Scaled-Area",
+            "Site-Features"
+          ]
+        },
+        "Feature-Main": {
+          "label": "Main",
+          "fields": [
+            "Feature-HRID",
+            "Feature-Name",
+            "Feature-Count",
+            "Feature-Depth",
+            "Feature-Volume-Class",
+            "Feature-Volume",
+            "Feature-Combined",
+            "Feature-Density",
+            "Feature-Scaled-Density",
+            "Feature-Label"
+          ]
+        },
+        "Calibration-Main": {
+          "label": "Main",
+          "fields": [
+            "Calibration-HRID",
+            "Cutter-ID",
+            "Cutter-Mass-g",
+            "Tare-g",
+            "Net-Cutter-g"
+          ]
+        },
+        "Test-Main": {
+          "label": "Main",
+          "fields": [
+            "Test-HRID",
+            "Test-Name",
+            "Wet-Mass-g",
+            "Core-Calibration",
+            "Soil-Mass-g"
+          ]
+        },
+        "Sample-Main": {
+          "label": "Main",
+          "fields": [
+            "Sample-HRID",
+            "Sample-Name",
+            "Sample-Increment",
+            "Previous-Sample",
+            "Sample-Level"
+          ]
+        }
+      },
+      "viewsets": {
+        "Site": {
+          "label": "Site",
+          "views": ["Site-Main"],
+          "hridField": "Site-HRID"
+        },
+        "Feature": {
+          "label": "Feature",
+          "views": ["Feature-Main"],
+          "hridField": "Feature-HRID"
+        },
+        "Calibration": {
+          "label": "Calibration",
+          "views": ["Calibration-Main"],
+          "hridField": "Calibration-HRID"
+        },
+        "Test": {
+          "label": "Test",
+          "views": ["Test-Main"],
+          "hridField": "Test-HRID"
+        },
+        "Sample": {
+          "label": "Sample",
+          "views": ["Sample-Main"],
+          "hridField": "Sample-HRID"
+        }
+      },
+      "visible_types": ["Site", "Calibration", "Test", "Sample"],
+      "settings": {
+        "showQrCodeButton": false
+      },
+      "schemaVersion": "1.0.0"
+    },
+    "metadata": {
+      "information": {
+        "notebookVersion": "1.0",
+        "purposeMarkdown": "Reference notebook for computed fields. Used by the data-model integration tests and benchmark.",
+        "projectLeadLabel": "FAIMS",
+        "leadInstitution": "FAIMS"
+      }
+    }
+  }
+}
