@@ -139,6 +139,19 @@ describe('Computed Sampler', () => {
     });
   });
 
+  describe('same-form references', () => {
+    test('a computed field reads computed fields of its own form', async () => {
+      const {featureId} = await createSiteWithFeature();
+      // Density 3 * Depth 4
+      expect(await readValue(engine, featureId, 'Feature-Volume')).toBe(12);
+      expect(await readValue(engine, featureId, 'Feature-Volume-Class')).toBe(
+        'High'
+      );
+      // Density 3 + Scaled-Density 1.5
+      expect(await readValue(engine, featureId, 'Feature-Combined')).toBe(4.5);
+    });
+  });
+
   describe('deleted records', () => {
     test('a deleted parent blanks the value, even when one is stored', async () => {
       const {siteId, featureId} = await createSiteWithFeature();

@@ -21,6 +21,7 @@ import {
 } from './types';
 import {compileComputedExpressionForForm} from './parentForms';
 import {fieldIdsForViewset} from './formScan';
+import {attachComputedOrder} from './computedOrder';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -740,6 +741,7 @@ export function compileUiSpecConditionals(
     const viewDef = uiSpecification.views[view];
     viewDef.conditionFn = compileExpression(viewDef.condition);
   }
+  attachComputedOrder(uiSpecification);
 }
 
 export function getFieldsForViewSet(

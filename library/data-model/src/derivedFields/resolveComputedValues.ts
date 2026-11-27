@@ -111,8 +111,16 @@ export const resolveComputedValues = async ({
       !(relFieldId in relatedValues)
     );
   };
-  for (const [fieldId, refs] of refsByField) {
-    if (refs.some(unresolved)) {
+  // Walk in evaluation order so a field that reads an unresolved computed
+  // field is unresolved too, and keeps its stored value with it.
+  const rank = (fieldId: string) =>
+    uiSpecification.fields[fieldId]?.expressionOrder ?? Number.MAX_SAFE_INTEGER;
+  const unresolvedFields = new Set<string>();
+  for (const [fieldId, refs] of Array.from(refsByField).sort(
+    ([a], [b]) => rank(a) - rank(b)
+  )) {
+    if (refs.some(ref => unresolved(ref) || unresolvedFields.has(ref))) {
+      unresolvedFields.add(fieldId);
       delete updates[fieldId];
     }
   }

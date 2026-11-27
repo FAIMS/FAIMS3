@@ -22,3 +22,4 @@ export {
   isConstantRef,
 } from './expressionConstants';
 export * from './uiSpecProperties';
+export * from './computedOrder';

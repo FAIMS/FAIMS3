@@ -294,3 +294,34 @@ describe('resolveComputedValues with a deleted record', () => {
     ).toEqual({'Soil-Mass-g': null});
   });
 });
+
+describe('same-form chain behind an unreadable parent', () => {
+  it('keeps the stored value of every field in the chain', async () => {
+    const spec = makeSpec();
+    spec.views['Feature-view'].fields.push('Feature-Doubled');
+    spec.fields['Feature-Doubled'] = {
+      ...field('faims-core::Number', 'ComputedNumber'),
+      'component-parameters': {expression: '{Feature-Density} * 2'},
+    };
+    compileUiSpecConditionals(spec);
+
+    const unreadable = jest.fn(async () => {
+      throw new Error('unreadable');
+    });
+    const engine = {
+      uiSpec: spec,
+      core: {getRecord: unreadable, getRevision: unreadable},
+      hydrated: {getHydratedRecord: unreadable, getFieldValues: unreadable},
+      form: {getExistingFormData: unreadable},
+    } as unknown as DerivedReadEngine;
+
+    const updates = await resolveComputedValues({
+      engine,
+      recordId: 'feature-1',
+      formId: 'Feature',
+      values: {'Feature-Count': 30, 'Feature-Density': 3, 'Feature-Doubled': 6},
+      parents: [{recordId: 'site-1'}],
+    });
+    expect(updates).toEqual({});
+  });
+});

@@ -100,6 +100,7 @@ export function recomputeComputedFields({
     fieldName: string;
     expressionFn: (scope: Map<string, ExprValue>) => ExprValue | null;
     references: string[];
+    order?: number;
   }[] = [];
 
   for (const fieldName of formFieldNames) {
@@ -125,13 +126,27 @@ export function recomputeComputedFields({
         );
         continue;
       }
-      computedFields.push({fieldName, expressionFn, references});
+      computedFields.push({
+        fieldName,
+        expressionFn,
+        references,
+        order: fieldDetails.expressionOrder,
+      });
     }
   }
 
+  // Evaluate in dependency order; fields with no position go last.
+  const rank = (order?: number) => order ?? Number.MAX_SAFE_INTEGER;
+  computedFields.sort((a, b) => rank(a.order) - rank(b.order));
+  // Results so far this pass, read by later computed fields.
+  const computedResults = new Map<string, ExprValue | null>();
+
   // Resolves a local field name to a typed value, or null when missing,
-  // mistyped, or itself derived.
+  // mistyped, or derived and not yet evaluated.
   const resolveField = (name: string): ExprValue | null => {
+    if (computedResults.has(name)) {
+      return computedResults.get(name) ?? null;
+    }
     if (derivedFields.has(name)) {
       return null;
     }
@@ -238,6 +253,7 @@ export function recomputeComputedFields({
     if (result === '') {
       result = null;
     }
+    computedResults.set(fieldName, result);
 
     if (hasComputedValueChanged(values[fieldName], result)) {
       updates[fieldName] = result;
